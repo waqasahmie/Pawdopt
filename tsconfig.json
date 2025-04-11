@@ -6,9 +6,21 @@
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
   },
   "include": [
+    "components/**/*",
+    "assets/**/*",
+    "hooks/**/*",
+    "constants/**/*",
+    "utils/**/*",
+    "ui/**/*",
+    "images/**/*",
+    "fonts/**/*",
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",

@@ -1,45 +1,93 @@
+// import { Tabs } from 'expo-router';
+// import React from 'react';
+// import { Platform } from 'react-native';
+
+// import { HapticTab } from '@/components/HapticTab';
+// import { IconSymbol } from '@/components/ui/IconSymbol';
+// import TabBarBackground from '@/components/ui/TabBarBackground';
+// import { Colors } from '@/constants/Colors';
+// import { useColorScheme } from '@/hooks/useColorScheme';
+
+// export default function TabLayout() {
+//   const colorScheme = useColorScheme();
+
+//   return (
+//     <Tabs
+//       screenOptions={{
+//         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+//         headerShown: false,
+//         tabBarButton: HapticTab,
+//         tabBarBackground: TabBarBackground,
+//         tabBarStyle: Platform.select({
+//           ios: {
+//             // Use a transparent background on iOS to show the blur effect
+//             position: 'absolute',
+//           },
+//           default: {},
+//         }),
+//       }}>
+//       <Tabs.Screen
+//         name="index"
+//         options={{
+//           title: 'Home',
+//           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+//         }}
+//       />
+//       <Tabs.Screen
+//         name="explore"
+//         options={{
+//           title: 'Explore',
+//           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+//         }}
+//       />
+//     </Tabs>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+import { TabBar } from '@/components/ui/TabBar';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Platform } from 'react-native';
 
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+const TabLayout = () => {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
+    <Tabs tabBar={props => <TabBar {...props} />}>
+        <Tabs.Screen name='index' options={{ headerShown: false }} />
+        <Tabs.Screen name='location' options={{ headerShown: false }} />
+        <Tabs.Screen name='favorite' options={{ headerShown: false }} />
+        <Tabs.Screen name='chat' options={{ headerShown: false }} />
+        <Tabs.Screen name='account' options={{ headerShown: false }} />
     </Tabs>
-  );
+  )
 }
+
+export default TabLayout;
+
+
+// import { Stack } from 'expo-router';
+// import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
+// export default function Layout() {
+//   return (
+//     <GestureHandlerRootView style={{ flex: 1 }}>
+//       <Stack>
+//         <Stack.Screen
+//           name="index"
+//           options={{ headerShown: false, presentation: 'fullScreenModal' }}
+//         />
+//         <Stack.Screen
+//           name="create"
+//           options={{ headerShown: false, presentation: 'fullScreenModal' }}
+//         />
+//       </Stack>
+//     </GestureHandlerRootView>
+//   );
+// }
