@@ -4,14 +4,13 @@ module.exports = function (api) {
     presets: ["babel-preset-expo"],
     plugins: [
       [
-        "module-resolver",
+        "react-native-reanimated/plugin", // must always be last
         {
           alias: {
             "@": "./", // Allows imports like "@/components/...", "@/hooks/..."
           },
         },
       ],
-      "react-native-reanimated/plugin", // must always be last
     ],
   };
 };
