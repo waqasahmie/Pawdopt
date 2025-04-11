@@ -25,7 +25,7 @@ export default function RootLayout() {
   return (
       <Stack initialRouteName="(onboarding)">
         <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false, headerTransparent: true }}/>
+        <Stack.Screen name="(auth)" options={{ headerShown: false }}/>
         <Stack.Screen name="(forgotPassword)" options={{ headerShown: false }}/>
         <Stack.Screen name="(modals)" options={{ headerShown: false, presentation: "modal" }}/>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

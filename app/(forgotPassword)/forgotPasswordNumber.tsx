@@ -103,13 +103,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     paddingHorizontal: 20,
+    paddingVertical: 50,
   },
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between", // Back button left & email right
     width: "100%",
-    marginTop: Platform.OS === "ios" ? 50 : 20,
+    marginTop: Platform.OS === "ios" ? 0 : -20,
   },
   topLeftImage: {
     position: "absolute",
