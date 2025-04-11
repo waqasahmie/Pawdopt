@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Image, StatusBar, ImageBackgr
 import { FontAwesome, AntDesign } from "@expo/vector-icons";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { ms } from "react-native-size-matters";
-
+import { router } from "expo-router";
 export default function GetStarted() {
   return (
     <Animated.View style={styles.container} entering={FadeIn.duration(500)}>
@@ -41,11 +41,11 @@ export default function GetStarted() {
         </TouchableOpacity>
     
         <View style={styles.bottomContainer}>
-          <TouchableOpacity style={styles.signupButton}>
+          <TouchableOpacity style={styles.signupButton} onPress={() => router.push('/signup')}>
             <Text style={styles.signupText}>Sign up</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.signinButton}>
+          <TouchableOpacity style={styles.signinButton} onPress={() => router.push('/signin')}>
             <Text style={styles.signinText}>Sign in</Text>
           </TouchableOpacity>
         </View>

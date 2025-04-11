@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   },
   signupText: {
     color: "#000",
-    marginTop: 10,
+    marginTop: 30,
     marginBottom: 30,
   },
   orContainer: {

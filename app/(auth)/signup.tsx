@@ -31,7 +31,7 @@ export default function SignupEmail() {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 50} // Adjust this value as needed
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 50} // Adjust this value as needed
       style={styles.container}
     >
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
