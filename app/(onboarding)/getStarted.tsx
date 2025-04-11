@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Image, StatusBar, ImageBackground } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Image, StatusBar, ImageBackground, Platform } from "react-native";
 import { FontAwesome, AntDesign } from "@expo/vector-icons";
 import Animated, { FadeIn } from "react-native-reanimated";
+import { ms } from "react-native-size-matters";
 
 export default function GetStarted() {
   return (
@@ -93,14 +94,14 @@ const styles = StyleSheet.create({
     marginTop: 55,
   },
   title: {
-    fontSize: 30,
+    fontSize: Platform.OS === 'ios' ? ms(29) : ms(26),
     fontWeight: "700",
     color: "#000",
     marginTop: 20,
     marginBottom: 10,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: Platform.OS === 'ios' ? ms(15) : ms(12),
     color: "#939393",
     marginBottom: 20,
   },
@@ -126,7 +127,7 @@ const styles = StyleSheet.create({
     elevation: 3, // For Android shadow
   },
   socialText: {
-    fontSize: 16,
+    fontSize: Platform.OS === 'ios' ? ms(15) : ms(12),
     fontWeight: "600",
     color: "#000",
   },
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
   },
   signupText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: Platform.OS === 'ios' ? ms(15) : ms(12),
     fontWeight: "600",
   },
   signinButton: {
@@ -167,7 +168,7 @@ const styles = StyleSheet.create({
   },
   signinText: {
     color: "#2BBFFF",
-    fontSize: 16,
+    fontSize: Platform.OS === 'ios' ? ms(15) : ms(12),
     fontWeight: "600",
   },
   footer: {
@@ -179,7 +180,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: "#808080",
-    fontSize: 14,
+    fontSize: Platform.OS === 'ios' ? ms(13) : ms(10),
   },
   footerText2: {
     color: "#808080",
