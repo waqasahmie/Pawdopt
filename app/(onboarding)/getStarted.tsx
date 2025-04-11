@@ -70,6 +70,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     paddingHorizontal: 20,
+    paddingVertical: 50,
   },
   topLeftImage: {
     position: "absolute",

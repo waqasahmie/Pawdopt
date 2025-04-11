@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, TouchableWithoutFeedback, Keyboard } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, TouchableWithoutFeedback, Keyboard, Platform } from "react-native";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { router } from "expo-router";
 
 export default function SignInScreen() {
   const [checked, setChecked] = useState(false);
@@ -45,7 +46,7 @@ export default function SignInScreen() {
           <TextInput placeholder="Password" secureTextEntry style={styles.input} placeholderTextColor="#939393" />
 
           <View style={{ width: "90%", alignItems: "flex-end" }}>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/forgotPassword')}>
               <Text style={styles.forgotPassword}>Forgot Password?</Text>
             </TouchableOpacity>
           </View>
@@ -99,13 +100,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     paddingHorizontal: 20,
+    paddingVertical: 50,
   },
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between", // Back button left & email right
     width: "100%",
-    marginTop: 50,
+    marginTop: Platform.OS === "ios" ? 0 : -20,
   },
   topLeftImage: {
     position: "absolute",

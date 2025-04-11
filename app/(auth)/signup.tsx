@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   },
   resendContainer: {
     width: "100%",
-    padding: 15,
+    paddingTop: 15,
     alignItems: "center",
   },
   resendText: {
