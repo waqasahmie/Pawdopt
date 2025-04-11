@@ -30,8 +30,7 @@ export default function SignupEmail() {
 
   return (
     <KeyboardAvoidingView 
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 50} // Adjust this value as needed
+      behavior={Platform.OS === "android" ? "height" : "padding"}
       style={styles.container}
     >
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
@@ -105,7 +104,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    marginTop: 50,
+    marginTop: Platform.OS === "ios" ? 50 : 20,
   },
   progressBarContainer: {
     flexDirection: "row", // new
