@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-
+import { router } from "expo-router";
 export default function OTPVerification() {
   const navigation = useNavigation();
   const [otp, setOtp] = useState(["", "", "", ""]);
@@ -81,7 +81,7 @@ export default function OTPVerification() {
 
         {/* Continue Button */}
         <View style={styles.bottomContainer}>
-          <TouchableOpacity style={[styles.continueButton, otp.join("").length < 4 && styles.disabledButton]} disabled={otp.join("").length < 4} >
+          <TouchableOpacity style={[styles.continueButton, otp.join("").length < 4 && styles.disabledButton]} disabled={otp.join("").length < 4} onPress={() => router.replace('/(forgotPassword)/newPassword')}>
             <Text style={styles.continueText}>Continue</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.resendContainer}>
