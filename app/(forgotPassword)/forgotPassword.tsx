@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, Keyboard, TouchableWithoutFeedback, Platform } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -6,6 +6,7 @@ import { router } from "expo-router";
 
 export default function ForgotPasswordEmailScreen() {
   const navigation = useNavigation();
+  const [email, setEmail] = useState(''); // Track email input
   const dismissKeyboard = () => Keyboard.dismiss();
 
   return (
@@ -40,7 +41,7 @@ export default function ForgotPasswordEmailScreen() {
           <View style={styles.textContainer}>
             <Text style={styles.inputHeader}>Your Registered Email?</Text>
           </View>
-          <TextInput placeholder="waqasahmed@gmail.com" style={styles.input} placeholderTextColor="#939393" />
+          <TextInput placeholder="waqasahmed@gmail.com" style={styles.input} placeholderTextColor="#939393" onChangeText={setEmail} value={email} />
 
           <View>
             <TouchableOpacity onPress={() => router.push('./forgotPasswordNumber')}>
@@ -50,7 +51,7 @@ export default function ForgotPasswordEmailScreen() {
 
           {/* Continue Button */}
           <View style={styles.bottomContainer}>
-            <TouchableOpacity style={styles.continueButton} onPress={() => router.push('/(modals)/otpEmail')}>
+            <TouchableOpacity style={[styles.continueButton, !email ? { backgroundColor: "#CCCCCC" } : null ]} onPress={() => router.push('/(modals)/otpEmail')} disabled={!email}>
               <Text style={styles.continueText}>Send OTP</Text>
             </TouchableOpacity>
           </View>

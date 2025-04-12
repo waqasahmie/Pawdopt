@@ -82,7 +82,7 @@ export default function ForgotPasswordPhoneScreen() {
             
           {/* Continue Button */}
           <View style={styles.bottomContainer}>
-            <TouchableOpacity style={styles.continueButton} onPress={() => router.push('/(modals)/otpNumber')}>
+            <TouchableOpacity style={[styles.continueButton, !phoneNumber ? { backgroundColor: "#CCCCCC" } : null ]} onPress={() => router.push('/(modals)/otpNumber')} disabled={!phoneNumber}>
               <Text style={styles.continueText}>Send OTP</Text>
             </TouchableOpacity>
           </View>
