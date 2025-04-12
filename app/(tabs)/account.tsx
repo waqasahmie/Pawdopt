@@ -8,10 +8,9 @@ import {
   StatusBar,
   ScrollView,
 } from "react-native";
-
+import { ms, vs } from "react-native-size-matters";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import BottomSheet from "@/components/ui/BottomSheet";
 
 export default function ForgotPasswordPhoneScreen() {
 
@@ -262,7 +261,8 @@ const styles = StyleSheet.create({
     justifyContent: "center", // Back button left & email right
     alignItems: "center",
     width: "100%",
-    marginVertical: 20,
+    marginTop: vs(5),
+    marginBottom: vs(20),
   },
   scrollContainer: {
     width: "100%",

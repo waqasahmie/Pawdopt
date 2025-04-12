@@ -47,7 +47,7 @@ const TabBarButton = ({
     >
       <Animated.View style={animatedIconStyle}>
         {icon[routeName as keyof typeof icon]({
-          color: isFocused ? "black" : "white", // Focused tab is black, others are white
+          // color: isFocused ? "black" : "white", // Focused tab is black, others are white
           focused: isFocused, // Pass isFocused to change the icon
         })}
       </Animated.View>

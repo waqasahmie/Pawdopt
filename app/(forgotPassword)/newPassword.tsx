@@ -14,6 +14,8 @@ export default function NewPassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
+
 
   const handlePasswordChange = (text: React.SetStateAction<string>) => setPassword(text);
   const handleConfirmPasswordChange = (text: React.SetStateAction<string>) => setConfirmPassword(text);
@@ -94,13 +96,14 @@ export default function NewPassword() {
               secureTextEntry={!showConfirmPassword}
               value={confirmPassword}
               onChangeText={handleConfirmPasswordChange}
+              onBlur={() => setConfirmPasswordTouched(true)}
             />
             <TouchableOpacity onPress={toggleShowConfirmPassword} style={styles.eyeIcon}>
               <MaterialIcons name={showConfirmPassword ? "visibility" : "visibility-off"} size={18} color="#939393" />
             </TouchableOpacity>
           </View>
           {/* Error Message */}
-          {!passwordsMatch && password.length > 0 && (
+          {!passwordsMatch && confirmPasswordTouched && password.length > 0 && (
             <Text style={styles.errorText}>Confirm Password does not match.</Text>
           )}
 

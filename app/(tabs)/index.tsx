@@ -1,16 +1,16 @@
+import { FemaleSymbolIcon, MaleSymbolIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
   Image,
   StyleSheet,
-  TextInput,
   ScrollView,
   TouchableOpacity,
   Platform,
   Animated,
 } from "react-native";
-import { Ionicons, Feather, Octicons } from "@expo/vector-icons";
 import { s, vs, ms } from "react-native-size-matters";
 
 const bannerImages = [
@@ -29,7 +29,7 @@ const allPets = [
     breed: "Maine Coon",
     name: "Smokey",
     category: "Cats",
-    gender: require("../../assets/images/male.png"),
+    gender: "Male",
     size: { width: 16, height: 16 },
     distance: "1.7km Away",
     image: require("../../assets/images/mainecoon.jpg"),
@@ -39,7 +39,7 @@ const allPets = [
     breed: "Macaw",
     name: "Lily",
     category: "Parrots",
-    gender: require("../../assets/images/female.png"),
+    gender: "Female",
     size: { width: 14, height: 16 },
     distance: "3.2km Away",
     image: require("../../assets/images/macaw.jpg"),
@@ -49,7 +49,7 @@ const allPets = [
     breed: "Golden Ret.",
     name: "Lucy",
     category: "Dogs",
-    gender: require("../../assets/images/female.png"),
+    gender: "Female",
     size: { width: 14, height: 16 },
     distance: "1.3km Away",
     image: require("../../assets/images/goldenretriever.jpg"),
@@ -59,7 +59,7 @@ const allPets = [
     breed: "British Short.",
     name: "Raya",
     category: "Cats",
-    gender: require("../../assets/images/female.png"),
+    gender: "Female",
     size: { width: 14, height: 16 },
     distance: "2.9km Away",
     image: require("../../assets/images/britishshorthair.jpg"),
@@ -69,7 +69,7 @@ const allPets = [
     breed: "Cockatoo",
     name: "Smiley",
     category: "Parrots",
-    gender: require("../../assets/images/male.png"),
+    gender: "Male",
     size: { width: 16, height: 16 },
     distance: "2.8km Away",
     image: require("../../assets/images/cockatoo.jpg"),
@@ -79,7 +79,7 @@ const allPets = [
     breed: "Ragdoll",
     name: "Leo",
     category: "Cats",
-    gender: require("../../assets/images/male.png"),
+    gender: "Male",
     size: { width: 16, height: 16 },
     distance: "2.6km Away",
     image: require("../../assets/images/ragdoll.jpg"),
@@ -89,7 +89,7 @@ const allPets = [
     breed: "Samoyed",
     name: "Frosty",
     category: "Dogs",
-    gender: require("../../assets/images/male.png"),
+    gender: "Male",
     size: { width: 16, height: 16 },
     distance: "3.1km Away",
     image: require("../../assets/images/samoyed.jpg"),
@@ -99,7 +99,7 @@ const allPets = [
     breed: "African Grey",
     name: "Gizmo",
     category: "Parrots",
-    gender: require("../../assets/images/male.png"),
+    gender: "Male",
     size: { width: 16, height: 16 },
     distance: "1.9km Away",
     image: require("../../assets/images/africangrey.jpg"),
@@ -109,7 +109,7 @@ const allPets = [
     breed: "Siberian L.",
     name: "Mila",
     category: "Cats",
-    gender: require("../../assets/images/female.png"),
+    gender: "Female",
     size: { width: 14, height: 16 },
     distance: "2.8km Away",
     image: require("../../assets/images/siberian.jpg"),
@@ -119,7 +119,7 @@ const allPets = [
     breed: "Labrador R.",
     name: "Daisy",
     category: "Dogs",
-    gender: require("../../assets/images/male.png"),
+    gender: "Male",
     size: { width: 16, height: 16 },
     distance: "2.6km Away",
     image: require("../../assets/images/labrador.jpg"),
@@ -129,7 +129,7 @@ const allPets = [
     breed: "M. Cockatoo",
     name: "Candy",
     category: "Parrots",
-    gender: require("../../assets/images/male.png"),
+    gender: "Male",
     size: { width: 16, height: 16 },
     distance: "2.6km Away",
     image: require("../../assets/images/mcockatoo.jpg"),
@@ -139,7 +139,7 @@ const allPets = [
     breed: "German Sh.",
     name: "Bruno",
     category: "Dogs",
-    gender: require("../../assets/images/male.png"),
+    gender: "Male",
     size: { width: 16, height: 16 },
     distance: "1.8km Away",
     image: require("../../assets/images/german.jpg"),
@@ -149,7 +149,7 @@ const allPets = [
     breed: "Sun Conure",
     name: "Cane",
     category: "Parrots",
-    gender: require("../../assets/images/male.png"),
+    gender: "Male",
     size: { width: 16, height: 16 },
     distance: "1.7km Away",
     image: require("../../assets/images/sunconure.jpg"),
@@ -159,7 +159,7 @@ const allPets = [
     breed: "Persian",
     name: "Abby",
     category: "Cats",
-    gender: require("../../assets/images/female.png"),
+    gender: "Female",
     size: { width: 14, height: 16 },
     distance: "3.8km Away",
     image: require("../../assets/images/persian.jpg"),
@@ -169,7 +169,7 @@ const allPets = [
     breed: "Husky",
     name: "Snowy",
     category: "Dogs",
-    gender: require("../../assets/images/female.png"),
+    gender: "Female",
     size: { width: 14, height: 16 },
     distance: "2.8km Away",
     image: require("../../assets/images/husky.jpg"),
@@ -178,7 +178,6 @@ const allPets = [
 
 export default function PetAdoptionScreen() {
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [searchTerm, setSearchTerm] = useState("");
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const currentIndex = useRef(0);
@@ -263,37 +262,6 @@ export default function PetAdoptionScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.innerContainer}>
-        <View style={styles.headerContainer}>
-          <View style={styles.greetingContainer}>
-            <View style={styles.greeting}>
-              <Text style={styles.greetingText}>Hey, </Text>
-              <Text style={styles.username}>Waqas!</Text>
-            </View>
-            <Image
-              source={require("../../assets/images/Pawprint.png")}
-              style={styles.paw}
-            />
-          </View>
-          <View style={styles.searchContainer}>
-            <TextInput
-              placeholder="Persian Cat"
-              returnKeyType="search"
-              style={styles.searchInput}
-              placeholderTextColor="#939393"
-              value={searchTerm}
-              onChangeText={setSearchTerm}
-            />
-            <Ionicons name="search" size={ms(19)} style={styles.searchIcon} />
-          </View>
-          <View style={styles.iconRow}>
-            <Image
-              source={require("../../assets/images/vet.png")}
-              style={styles.icon}
-            />
-            <Octicons name="bell" size={ms(22)} />
-          </View>
-        </View>
-
         <View style={styles.wrapper}>
           <Animated.Image
             source={currentImage}
@@ -353,18 +321,22 @@ export default function PetAdoptionScreen() {
           >
             {filteredPets.map((pet) => (
               <View key={pet.id} style={styles.petCard}>
-                <Image source={pet.image} style={styles.petImage} />
-                <View style={styles.petInfo}>
-                  <Text style={styles.breedText}>{pet.breed}</Text>
-                  <View style={{ flexDirection: "row" }}>
-                    <Text style={styles.nameText}>{pet.name}</Text>
-                    <View style={styles.genderImage}>
-                      <Image source={pet.gender} style={pet.size} />
-                    </View>
+              <Image source={pet.image} style={styles.petImage} />
+              <View style={styles.petInfo}>
+                <Text style={styles.breedText}>{pet.breed}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text style={styles.nameText}>{pet.name}</Text>
+                  <View style={styles.gender}>
+                    {pet.gender === "Female" ? (
+                      <HugeiconsIcon icon={FemaleSymbolIcon} size={ms(16)} color="#2BBFFF" strokeWidth={2.5}/>
+                    ) : pet.gender === "Male" ? (
+                      <HugeiconsIcon icon={MaleSymbolIcon} size={ms(16)} color="#2BBFFF" strokeWidth={2.5}/>
+                    ) : null}
                   </View>
-                  <Text style={styles.distanceText}>{pet.distance}</Text>
                 </View>
+                <Text style={styles.distanceText}>{pet.distance}</Text>
               </View>
+            </View>
             ))}
             <Text style={styles.note}>Looks like you've reached the end!</Text>
           </ScrollView>
@@ -390,7 +362,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    marginTop: 20,
+    marginTop: Platform.OS === "ios" ? 50 : 20,
   },
   scrollContainer: {
     width: "100%",
@@ -452,6 +424,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     position: "relative",
     backgroundColor: "#eee",
+    marginTop: 20,
   },
   bannerImage: {
     width: width,
@@ -552,8 +525,8 @@ const styles = StyleSheet.create({
     color: "#ACACAC",
     marginTop: ms(5),
   },
-  genderImage: {
-    marginTop: ms(10),
+  gender: {
+    marginTop: ms(7),
     marginLeft: ms(6),
   },
   distanceText: {

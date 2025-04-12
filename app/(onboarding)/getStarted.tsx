@@ -31,12 +31,12 @@ export default function GetStarted() {
         </TouchableOpacity>
     
         <TouchableOpacity style={styles.socialButton}>
-          <AntDesign name="google" size={20} color="#DB4437" style={styles.socialIcon} />
+          <Image source={require("../../assets/images/google.png")} style={styles.googleIcon} />
           <Text style={styles.socialText}>Continue with Google</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.socialButton}>
-          <AntDesign name="apple1" size={20} color="black" style={styles.socialIcon} />
+          <AntDesign name="apple1" size={22} color="black" style={styles.socialIcon} />
           <Text style={styles.socialText}>Continue with Apple</Text>
         </TouchableOpacity>
     
@@ -136,6 +136,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 20, // Icon ko left side fix karne ke liye
   },
+  googleIcon: {
+    position: "absolute",
+    left: 20,
+    width: 20,
+    height: 20,
+  },
   signupButton: {
     backgroundColor: "#2BBFFF",
     width: "100%",
@@ -155,7 +161,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   signinButton: {
-    backgroundColor: "#E5F1FD",
+    backgroundColor: "#F2FBFF",
     width: "100%",
     padding: 15,
     borderRadius: 30,

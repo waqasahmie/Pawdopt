@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import React from "react";
 import { View, Text, TouchableOpacity, Image, StyleSheet, StatusBar } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -27,7 +28,7 @@ export default function PasswordResetSuccessfully() {
 
       {/* Continue Button */}
       <View style={styles.bottomContainer}>
-        <TouchableOpacity style={styles.continueButton}>
+        <TouchableOpacity style={styles.continueButton} onPress={() => router.push("../(tabs)")}>
           <Text style={styles.continueText}>Go To Homepage</Text>
         </TouchableOpacity>
       </View>

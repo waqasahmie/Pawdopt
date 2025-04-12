@@ -1,8 +1,19 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, TouchableWithoutFeedback, Keyboard, Platform } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  StatusBar,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Platform,
+} from "react-native";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
 
 export default function SignInScreen() {
@@ -18,64 +29,118 @@ export default function SignInScreen() {
 
           {/* Back Button (Positioned Below Status Bar) */}
           <View style={styles.headerContainer}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style = {{ zIndex : 10 }} >
-              <MaterialIcons name="arrow-back-ios-new" size={16} color="black" />
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={{ zIndex: 10 }}
+            >
+              <MaterialIcons
+                name="arrow-back-ios-new"
+                size={16}
+                color="black"
+              />
             </TouchableOpacity>
           </View>
 
           {/* Top Left Background Image */}
-           <Image source={require("../../assets/images/PawprintT.png")} style={styles.topLeftImage} />
+          <Image
+            source={require("../../assets/images/PawprintT.png")}
+            style={styles.topLeftImage}
+          />
 
-           {/* Bottom Right Background Image */}
-           <Image source={require("../../assets/images/PawprintB.png")} style={styles.bottomRightImage} />
+          {/* Bottom Right Background Image */}
+          <Image
+            source={require("../../assets/images/PawprintB.png")}
+            style={styles.bottomRightImage}
+          />
 
           {/* Logo Icon */}
-          <Image source={require("../../assets/images/paw.png")} style={styles.pawIcon} />
+          <Image
+            source={require("../../assets/images/paw.png")}
+            style={styles.pawIcon}
+          />
 
           {/* Welcome Text */}
           <View style={styles.textContainer}>
             <View style={styles.titleRow}>
               <Text style={styles.title}>Welcome Back!</Text>
-              <Image source={require("../../assets/images/paws.png")} style={styles.paws} />
+              <Image
+                source={require("../../assets/images/paws.png")}
+                style={styles.paws}
+              />
             </View>
-            <Text style={styles.subtitle}>A world of furry possibilities awaits you.</Text>
+            <Text style={styles.subtitle}>
+              A world of furry possibilities awaits you.
+            </Text>
           </View>
 
           {/* Input Fields */}
-          <TextInput placeholder="Email or Phone number" style={styles.input} placeholderTextColor="#939393" />
-          <TextInput placeholder="Password" secureTextEntry style={styles.input} placeholderTextColor="#939393" />
+          <TextInput
+            placeholder="Email or Phone number"
+            style={styles.input}
+            placeholderTextColor="#939393"
+          />
+          <TextInput
+            placeholder="Password"
+            secureTextEntry
+            style={styles.input}
+            placeholderTextColor="#939393"
+          />
 
           <View style={{ width: "90%", alignItems: "flex-end" }}>
-            <TouchableOpacity onPress={() => router.push('/forgotPassword')}>
+            <TouchableOpacity onPress={() => router.push("/forgotPassword")}>
               <Text style={styles.forgotPassword}>Forgot Password?</Text>
             </TouchableOpacity>
           </View>
 
           {/* Terms & Conditions Checkbox */}
           <View style={styles.termsContainer}>
-            <TouchableOpacity style={[styles.checkbox, checked && styles.checkedBox]} onPress={() => setChecked(!checked)} > {checked && <Feather name="check" size={16} color="white" />} </TouchableOpacity>
-            <Text style={styles.termsText}>I agree to Pawdopt <Text style={styles.linkText}>Terms & Conditions</Text></Text>
+            <TouchableOpacity
+              style={[styles.checkbox, checked && styles.checkedBox]}
+              onPress={() => setChecked(!checked)}
+            >
+              {checked ? (
+                <Feather name="check" size={16} color="white" />
+              ) : (
+                null
+              )}
+            </TouchableOpacity>
+            <Text style={styles.termsText}>
+              I agree to Pawdopt{" "}
+              <Text style={styles.linkText}>Terms & Conditions</Text>
+            </Text>
           </View>
 
           {/* Sign Up Link */}
-          <Text style={styles.signupText}>Don’t have an account? <Text style={styles.linkText}>Sign up</Text></Text>
+          <Text style={styles.signupText}>
+            Don’t have an account? <Text style={styles.linkText}>Sign up</Text>
+          </Text>
 
           {/* Social Logins */}
 
           <View style={styles.orContainer}>
             <View style={styles.line} />
-            <Text style={styles.orText}>{"   "} or {"   "}</Text>
+            <Text style={styles.orText}>
+              {"   "} or {"   "}
+            </Text>
             <View style={styles.line} />
           </View>
-          
+
           {/* Social Buttons */}
           <View style={styles.bottomContainer}>
             <TouchableOpacity style={styles.socialButton}>
-              <AntDesign name="google" size={20} color="#DB4437" style={styles.socialIcon} />
+              <Image
+                source={require("../../assets/images/google.png")}
+                style={styles.googleIcon}
+              />
               <Text style={styles.socialText}>Continue with Google</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.socialButton}>
-              <AntDesign name="apple1" size={20} color="black" style={styles.socialIcon} />
+              <AntDesign
+                name="apple1"
+                size={22}
+                color="black"
+                style={styles.socialIcon}
+              />
               <Text style={styles.socialText}>Continue with Apple</Text>
             </TouchableOpacity>
 
@@ -85,7 +150,7 @@ export default function SignInScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </TouchableWithoutFeedback>  
+      </TouchableWithoutFeedback>
     </View>
   );
 }
@@ -244,6 +309,12 @@ const styles = StyleSheet.create({
   socialIcon: {
     position: "absolute",
     left: 20, // Icon ko left side fix karne ke liye
+  },
+  googleIcon: {
+    position: "absolute",
+    left: 20,
+    width: 20,
+    height: 20,
   },
   bottomContainer: {
     position: "absolute",

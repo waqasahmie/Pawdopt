@@ -14,6 +14,8 @@ import { Ionicons } from "@expo/vector-icons";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import { s, vs, ms } from "react-native-size-matters";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Search01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react-native";
 
 const messages = [
   {
@@ -152,7 +154,13 @@ export default function InboxScreen() {
             value={searchTerm}
             onChangeText={setSearchTerm}
           />
-          <Ionicons name="search" size={ms(19)} style={styles.searchIcon} />
+          <View style={styles.searchIcon}>
+          <HugeiconsIcon
+            icon={Search01Icon}
+            size={ms(19)}
+            style={styles.searchIcon}
+          />
+        </View>
           <Image
             source={require("../../assets/images/avatar.png")}
             style={styles.avatar}
@@ -214,14 +222,14 @@ const styles = StyleSheet.create({
   },
   innerContainer: {
     flex: 1,
-    // top: 40,
     justifyContent: "flex-start",
     paddingHorizontal: s(20),
   },
   headerContainer: {
     flexDirection: "row",
     width: "100%",
-    marginVertical: vs(20),
+    marginTop: vs(5),
+    marginBottom: vs(20),
     justifyContent: "space-between",
     alignItems: "center",
   },
@@ -239,7 +247,6 @@ const styles = StyleSheet.create({
   searchIcon: {
     position: "absolute",
     right: 85,
-    color: "#000",
   },
   avatar: {
     width: ms(40),
