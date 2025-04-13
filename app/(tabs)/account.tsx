@@ -11,18 +11,17 @@ import {
 import { vs } from "react-native-size-matters";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Modal } from '@/components/utils/modal'
-import { Logout } from '@/components/utils/logout'
-import { Preference } from '@/components/utils/preference'
-import { LinkedAccount } from '@/components/utils/linkedAccounts'
+import { Modal } from "@/components/utils/modal";
+import { Logout } from "@/components/utils/logout";
+import { Preference } from "@/components/utils/preference";
+import { LinkedAccount } from "@/components/utils/linkedAccounts";
 import { router } from "expo-router";
 
 export default function ForgotPasswordPhoneScreen() {
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [linkedAccountOpen, setLinkedAccountOpen] = useState(false);
 
-  const [logoutOpen, setLogoutOpen] = useState(false)
-  const [preferencesOpen, setPreferencesOpen] = useState(false)
-  const [linkedAccountOpen, setLinkedAccountOpen] = useState(false)
-  
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
@@ -38,7 +37,10 @@ export default function ForgotPasswordPhoneScreen() {
             showsVerticalScrollIndicator={false}
           >
             {/* Profile Section */}
-            <Pressable style={styles.profileCard}>
+            <Pressable
+              style={styles.profileCard}
+              onPress={() => router.push("/(accountScreens)/profileScreen")}
+            >
               <Image
                 source={require("../../assets/images/avatar.png")}
                 style={styles.avatar}
@@ -75,7 +77,11 @@ export default function ForgotPasswordPhoneScreen() {
               </Pressable>
               <View style={styles.line} />
 
-              <Pressable>
+              <Pressable
+                onPress={() =>
+                  router.push("/(accountScreens)/notificationsSettings")
+                }
+              >
                 <View style={styles.settingCard}>
                   <View style={styles.cardicon}>
                     <Image
@@ -96,7 +102,11 @@ export default function ForgotPasswordPhoneScreen() {
               </Pressable>
               <View style={styles.line} />
 
-              <Pressable>
+              <Pressable
+                onPress={() =>
+                  router.push("/(accountScreens)/securitySettings")
+                }
+              >
                 <View style={styles.settingCard}>
                   <View style={styles.cardicon}>
                     <Image
@@ -138,7 +148,9 @@ export default function ForgotPasswordPhoneScreen() {
               </Pressable>
               <View style={styles.line} />
 
-              <Pressable>
+              <Pressable
+                onPress={() => router.push("/(accountScreens)/myListings")}
+              >
                 <View style={styles.settingCard}>
                   <View style={styles.cardicon}>
                     <Image
@@ -251,14 +263,20 @@ export default function ForgotPasswordPhoneScreen() {
           </ScrollView>
         </View>
       </View>
-      <Modal isOpen={preferencesOpen} closeModal={() => setPreferencesOpen(false)}>
-        <Preference closeModal={() => setPreferencesOpen(false)}/>
+      <Modal
+        isOpen={preferencesOpen}
+        closeModal={() => setPreferencesOpen(false)}
+      >
+        <Preference closeModal={() => setPreferencesOpen(false)} />
       </Modal>
-      <Modal isOpen={linkedAccountOpen} closeModal={() => setLinkedAccountOpen(false)}>
+      <Modal
+        isOpen={linkedAccountOpen}
+        closeModal={() => setLinkedAccountOpen(false)}
+      >
         <LinkedAccount />
       </Modal>
       <Modal isOpen={logoutOpen} closeModal={() => setLogoutOpen(false)}>
-        <Logout closeModal={() => setLogoutOpen(false)}/>
+        <Logout closeModal={() => setLogoutOpen(false)} />
       </Modal>
     </SafeAreaView>
   );
