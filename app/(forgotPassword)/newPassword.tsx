@@ -81,7 +81,7 @@ export default function NewPassword() {
           </View>
           {/* Error Message */}
           {!isValidPassword(password) && password.length > 0 && (
-            <Text style={styles.errorText}>Must Contain One Upper Case, Lower Case, Number & Special Character.</Text>
+            <Text style={styles.errorText}>Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character.</Text>
           )}
 
           {/* Confirm Password Input */}

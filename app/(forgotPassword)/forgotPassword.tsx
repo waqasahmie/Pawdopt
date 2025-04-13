@@ -51,7 +51,7 @@ export default function ForgotPasswordEmailScreen() {
 
           {/* Continue Button */}
           <View style={styles.bottomContainer}>
-            <TouchableOpacity style={[styles.continueButton, !email ? { backgroundColor: "#CCCCCC" } : null ]} onPress={() => router.push('/(modals)/otpEmail')} disabled={!email}>
+            <TouchableOpacity style={[styles.continueButton, !email ? { backgroundColor: "#CCCCCC" } : null ]} onPress={() => router.push({pathname: '/(modals)/otpEmail', params: { from: 'forgotPassword' }})} disabled={!email}>
               <Text style={styles.continueText}>Send OTP</Text>
             </TouchableOpacity>
           </View>

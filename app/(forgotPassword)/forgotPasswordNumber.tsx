@@ -12,6 +12,7 @@ export default function ForgotPasswordPhoneScreen() {
   const [visible, setVisible] = useState<boolean>(false);
   const navigation = useNavigation();
 
+
   const dismissKeyboard = () => Keyboard.dismiss();
   
   return (
@@ -82,7 +83,7 @@ export default function ForgotPasswordPhoneScreen() {
             
           {/* Continue Button */}
           <View style={styles.bottomContainer}>
-            <TouchableOpacity style={[styles.continueButton, !phoneNumber ? { backgroundColor: "#CCCCCC" } : null ]} onPress={() => router.push('/(modals)/otpNumber')} disabled={!phoneNumber}>
+            <TouchableOpacity style={[styles.continueButton, !phoneNumber ? { backgroundColor: "#CCCCCC" } : null ]} onPress={() => router.push({pathname: '/(modals)/otpNumber', params: { from: 'forgotPasswordNumber' }})} disabled={!phoneNumber}>
               <Text style={styles.continueText}>Send OTP</Text>
             </TouchableOpacity>
           </View>
