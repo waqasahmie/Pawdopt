@@ -9,7 +9,8 @@ import {
 import React, { useEffect, useState } from "react";
 
 type PetBreedBSProps = {
-  closeModal: () => void;
+  // closeModal: () => void;
+  onCloseAndOpenModal?: () => void; // NEW
 };
 
 const screenHeight = Dimensions.get("window").height;
@@ -27,7 +28,7 @@ const breeds = [
   "Russian Blue",
 ];
 
-export const PetBreedBS = ({ closeModal }: PetBreedBSProps) => {
+export const PetBreedBS = ({ onCloseAndOpenModal }: PetBreedBSProps) => {
   const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
 
   const [selectedBreeds, setSelectedBreeds] = useState<string[]>([]);
@@ -49,14 +50,17 @@ export const PetBreedBS = ({ closeModal }: PetBreedBSProps) => {
     }).start();
   }, [slideAnim]); // Only runs when the component mounts
 
+  const [fadeAnim] = useState(new Animated.Value(1));
   // When the modal closes, we animate it to slide down
-  const handleClose = () => {
-    Animated.timing(slideAnim, {
-      toValue: screenHeight * 0.9, // Move the modal out of the screen (down)
-      duration: 300,
+  const handleContinue = () => {
+    // Trigger fade out
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
       useNativeDriver: true,
     }).start(() => {
-      closeModal(); // Call the closeModal prop to close the modal after animation
+      //closeModal(); // Call the closeModal prop to close the modal after animation
+      onCloseAndOpenModal && onCloseAndOpenModal();
     });
   };
 
@@ -99,7 +103,7 @@ export const PetBreedBS = ({ closeModal }: PetBreedBSProps) => {
             styles.ContinueButton,
             !selectedBreeds.length && { backgroundColor: "#ccc" }, // Disable button if no breed selected
           ]}
-          onPress={handleClose}
+          onPress={handleContinue}
           disabled={!selectedBreeds.length} // Disable button if no breed is selected
         >
           <Text style={styles.ContinueText}>Continue</Text>

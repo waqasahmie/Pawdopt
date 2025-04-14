@@ -1,33 +1,116 @@
 import React, { useRef, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, ScrollView, Image, Animated } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  StatusBar,
+  ScrollView,
+  Image,
+  Animated,
+  Pressable,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { GestureHandlerRootView, Swipeable } from "react-native-gesture-handler";
+import {
+  GestureHandlerRootView,
+  Swipeable,
+} from "react-native-gesture-handler";
 import * as Haptics from "expo-haptics";
-import Toast from '../../components/utils/toast';
+import Toast from "../../components/utils/toast";
+import { PetCategoryBS } from "@/components/utils/petCategoryBS";
+import { PetBreedBS } from "@/components/utils/petBreedBS";
+import { PetImages } from "@/components/utils/petImagesBS";
+import { PetDescription } from "@/components/utils/petDescriptionBS";
+import { PetInfoBS } from "@/components/utils/petInfoBS";
+import { PetSubmitted } from "@/components/utils/petSubmitted";
+import { Modal } from "@/components/utils/modal";
+import { HugeiconsIcon } from "@hugeicons/react-native";
+import { Edit02Icon } from "@hugeicons/core-free-icons";
 
 export default function MyListings() {
   const toastRef = useRef<any>({});
   const navigation = useNavigation();
   const [listings, setListings] = useState([
-    { id: 1, petType: "Maine Coon", name: "Smokey", gender: require("../../assets/images/male.png"), image: require("../../assets/images/mainecoon.jpg") },
-    { id: 2, petType: "Macaw", name: "Lily", gender: require("../../assets/images/female.png"), image: require("../../assets/images/macaw.jpg") },
-    { id: 3, petType: "Golden Ret.", name: "Lucy", gender: require("../../assets/images/female.png"), image: require("../../assets/images/goldenretriever.jpg") },
-    { id: 4, petType: "British Short.", name: "Raya", gender: require("../../assets/images/male.png"), image: require("../../assets/images/britishshorthair.jpg") },
-    { id: 5, petType: "Cockatoo", name: "Smiley", gender: require("../../assets/images/female.png"), image: require("../../assets/images/cockatoo.jpg") },
-    { id: 6, petType: "Ragdoll", name: "Leo", gender: require("../../assets/images/male.png"), image: require("../../assets/images/ragdoll.jpg") },
-    { id: 7, petType: "Samoyed", name: "Frosty", gender: require("../../assets/images/male.png"), image: require("../../assets/images/samoyed.jpg") },
-    { id: 8, petType: "African Grey", name: "Gizmo", gender: require("../../assets/images/female.png"), image: require("../../assets/images/africangrey.jpg") },
-    { id: 9, petType: "Persian", name: "Abby", gender: require("../../assets/images/female.png"), image: require("../../assets/images/persian.jpg") },
+    {
+      id: 1,
+      petType: "Maine Coon",
+      name: "Smokey",
+      gender: require("../../assets/images/male.png"),
+      image: require("../../assets/images/mainecoon.jpg"),
+    },
+    {
+      id: 2,
+      petType: "Macaw",
+      name: "Lily",
+      gender: require("../../assets/images/female.png"),
+      image: require("../../assets/images/macaw.jpg"),
+    },
+    {
+      id: 3,
+      petType: "Golden Ret.",
+      name: "Lucy",
+      gender: require("../../assets/images/female.png"),
+      image: require("../../assets/images/goldenretriever.jpg"),
+    },
+    {
+      id: 4,
+      petType: "British Short.",
+      name: "Raya",
+      gender: require("../../assets/images/male.png"),
+      image: require("../../assets/images/britishshorthair.jpg"),
+    },
+    {
+      id: 5,
+      petType: "Cockatoo",
+      name: "Smiley",
+      gender: require("../../assets/images/female.png"),
+      image: require("../../assets/images/cockatoo.jpg"),
+    },
+    {
+      id: 6,
+      petType: "Ragdoll",
+      name: "Leo",
+      gender: require("../../assets/images/male.png"),
+      image: require("../../assets/images/ragdoll.jpg"),
+    },
+    {
+      id: 7,
+      petType: "Samoyed",
+      name: "Frosty",
+      gender: require("../../assets/images/male.png"),
+      image: require("../../assets/images/samoyed.jpg"),
+    },
+    {
+      id: 8,
+      petType: "African Grey",
+      name: "Gizmo",
+      gender: require("../../assets/images/female.png"),
+      image: require("../../assets/images/africangrey.jpg"),
+    },
+    {
+      id: 9,
+      petType: "Persian",
+      name: "Abby",
+      gender: require("../../assets/images/female.png"),
+      image: require("../../assets/images/persian.jpg"),
+    },
   ]);
+
+  const [petCategoryBSOpen, setPetCategoryBSOpen] = useState(false);
+  const [petBreedBSOpen, setPetBreedBSOpen] = useState(false);
+  const [petImagesBSOpen, setPetImagesBSOpen] = useState(false);
+  const [petDescriptionBSOpen, setPetDescriptionBSOpen] = useState(false);
+  const [petInfoBSOpen, setPetInfoBSOpen] = useState(false);
+  const [petSubmittedOpen, setPetSubmittedOpen] = useState(false);
 
   // Function to delete an item
   const deleteItem = (id: number, petName: string) => {
     setListings(listings.filter((item) => item.id !== id));
 
     toastRef.current.show({
-      type: 'success',
-      title: 'Successfully Deleted',
+      type: "success",
+      title: "Successfully Deleted",
       description: `${petName} has been removed.`,
     });
 
@@ -35,7 +118,11 @@ export default function MyListings() {
   };
 
   // Render the delete button
-  const renderRightActions = (id: number, petName: string, progress: Animated.AnimatedInterpolation<string | number>) => {
+  const renderRightActions = (
+    id: number,
+    petName: string,
+    progress: Animated.AnimatedInterpolation<string | number>
+  ) => {
     const opacity = progress.interpolate({
       inputRange: [0, 1],
       outputRange: [0, 1],
@@ -45,8 +132,10 @@ export default function MyListings() {
       <TouchableOpacity
         onPress={() => deleteItem(id, petName)}
         style={styles.deleteButton}
-        >
-        <Animated.Text style={[styles.deleteText, { opacity }]}>Delete</Animated.Text>
+      >
+        <Animated.Text style={[styles.deleteText, { opacity }]}>
+          Delete
+        </Animated.Text>
       </TouchableOpacity>
     );
   };
@@ -58,15 +147,30 @@ export default function MyListings() {
 
         {/* Back Button */}
         <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ zIndex: 10 }}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ zIndex: 10 }}
+          >
             <MaterialIcons name="arrow-back-ios-new" size={16} color="black" />
           </TouchableOpacity>
           <Text style={styles.navText}>My Listings</Text>
         </View>
 
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false} style={{ marginBottom: 20 }}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+          style={{ marginBottom: 20 }}
+        >
           {listings.map((item) => (
-            <Swipeable key={item.id} renderRightActions={(progress) => renderRightActions(item.id, item.name, progress)} onSwipeableWillOpen={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}>
+            <Swipeable
+              key={item.id}
+              renderRightActions={(progress) =>
+                renderRightActions(item.id, item.name, progress)
+              }
+              onSwipeableWillOpen={() =>
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+              }
+            >
               <View style={styles.listingCard}>
                 <Image source={item.image} style={styles.petImage} />
                 <View style={styles.textContainer}>
@@ -76,11 +180,78 @@ export default function MyListings() {
                     <Image source={item.gender} style={styles.genderIcon} />
                   </View>
                 </View>
-                <Image source={require("../../assets/images/editListing.png")} style={styles.editlistingIcon} />
+                <Pressable
+                  onPress={() => setPetCategoryBSOpen(true)}
+                  style={styles.editlistingIcon}
+                >
+                  <HugeiconsIcon icon={Edit02Icon} size={18} color="#000" />
+                </Pressable>
               </View>
             </Swipeable>
           ))}
         </ScrollView>
+        <Modal
+          isOpen={petCategoryBSOpen}
+          closeModal={() => setPetCategoryBSOpen(false)}
+        >
+          <PetCategoryBS
+            // closeModal={() => setPetCategoryBSOpen(false)}
+            onCloseAndOpenModal={() => {
+              setPetCategoryBSOpen(false);
+              setPetBreedBSOpen(true);
+            }}
+          />
+        </Modal>
+        <Modal
+          isOpen={petBreedBSOpen}
+          closeModal={() => setPetBreedBSOpen(false)}
+        >
+          <PetBreedBS
+            onCloseAndOpenModal={() => {
+              setPetBreedBSOpen(false);
+              setPetImagesBSOpen(true);
+            }}
+          />
+        </Modal>
+        <Modal
+          isOpen={petImagesBSOpen}
+          closeModal={() => setPetImagesBSOpen(false)}
+        >
+          <PetImages
+            onCloseAndOpenModal={() => {
+              setPetImagesBSOpen(false);
+              setPetDescriptionBSOpen(true);
+            }}
+          />
+        </Modal>
+        <Modal
+          isOpen={petDescriptionBSOpen}
+          closeModal={() => setPetDescriptionBSOpen(false)}
+        >
+          <PetDescription
+            onCloseAndOpenModal={() => {
+              setPetDescriptionBSOpen(false);
+              setPetInfoBSOpen(true);
+            }}
+          />
+        </Modal>
+        <Modal
+          isOpen={petInfoBSOpen}
+          closeModal={() => setPetInfoBSOpen(false)}
+        >
+          <PetInfoBS
+            onCloseAndOpenModal={() => {
+              setPetInfoBSOpen(false);
+              setPetSubmittedOpen(true);
+            }}
+          />
+        </Modal>
+        <Modal
+          isOpen={petSubmittedOpen}
+          closeModal={() => setPetSubmittedOpen(false)}
+        >
+          <PetSubmitted closeModal={() => setPetSubmittedOpen(false)} />
+        </Modal>
       </View>
       <Toast ref={toastRef} />
     </GestureHandlerRootView>
@@ -136,7 +307,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   petType: {
-    fontFamily:"JUST Sans Outline ExBold",
+    fontFamily: "JUST Sans Outline ExBold",
     fontSize: 28,
     fontWeight: "700",
     color: "#AAAAAA",
@@ -159,8 +330,6 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
   editlistingIcon: {
-    width: 16,
-    height: 16,
     marginRight: 10,
   },
   deleteButton: {
@@ -176,5 +345,5 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
-  },
+  },
 });
