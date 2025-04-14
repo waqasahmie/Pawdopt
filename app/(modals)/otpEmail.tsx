@@ -21,7 +21,7 @@ export default function OTPVerification() {
   const navigation = useNavigation();
   const [otp, setOtp] = useState(["", "", "", ""]);
   const inputRefs = useRef<Array<TextInput | null>>([]);
-
+  
   // Handle OTP input changes
   const handleInputChange = (text: string, index: number) => {
     if (text.length === 1 && index < otp.length - 1) {

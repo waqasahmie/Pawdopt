@@ -5,6 +5,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { router } from "expo-router";
 
 export default function SignupCreatePassword() {
   const navigation = useNavigation();
@@ -84,6 +85,7 @@ export default function SignupCreatePassword() {
                 !isValidPassword(password) && styles.disabledButton
               ]} 
               disabled={!isValidPassword(password)}
+              onPress={() => router.push("/(finalSteps)/rbac")}
             >
               <Text style={styles.continueText}>Continue</Text>
             </TouchableOpacity>

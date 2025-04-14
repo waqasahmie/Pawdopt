@@ -1,34 +1,61 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet, StatusBar } from "react-native";
-import Animated, { FadeIn } from "react-native-reanimated";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  StatusBar,
+} from "react-native";
+import Animated from "react-native-reanimated";
 
-export default function PasswordResetSuccessfully() {
+export default function AccountCreated() {
+  const { from } = useLocalSearchParams();
+  const isFromVet = from === "vet";
 
   return (
-    <Animated.View style={styles.container} entering={FadeIn}>
+    <Animated.View style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
-      {/* Top Left Background Image */}
-       <Image source={require("../../assets/images/PawprintT.png")} style={styles.topLeftImage} />
 
-       {/* Bottom Right Background Image */}
-       <Image source={require("../../assets/images/PawprintB.png")} style={styles.bottomRightImage} />
-      
+      {/* Top Left Background Image */}
+      <Image
+        source={require("../../assets/images/PawprintT.png")}
+        style={styles.topLeftImage}
+      />
+
+      {/* Bottom Right Background Image */}
+      <Image
+        source={require("../../assets/images/PawprintB.png")}
+        style={styles.bottomRightImage}
+      />
+
       <View style={styles.centerWrapper}>
         {/* Logo Icon */}
-        <Image source={require("../../assets/images/SuccessTick.png")} style={styles.successIcon} />
+        <Image
+          source={require("../../assets/images/SuccessTick.png")}
+          style={styles.successIcon}
+        />
 
         {/* Success Text */}
         <View style={styles.textContainer}>
-          <Text style={styles.title}>You’re All Set</Text>
-          <Text style={styles.subtitle}>Your password has been successfully changed.</Text>
+          <Text style={styles.title}>
+            {isFromVet ? "Interview Scheduled" : "You’re All Set"}
+          </Text>
+          <Text style={styles.subtitle}>
+            {isFromVet
+              ? "Your interview has been scheduled. Please arrive on time and be prepared, as your account approval depends on the interview outcome."
+              : "Your account has been successfully created and is ready to use."}
+          </Text>
         </View>
       </View>
 
       {/* Continue Button */}
       <View style={styles.bottomContainer}>
-        <TouchableOpacity style={styles.continueButton} onPress={() => router.push("../(tabs)")}>
+        <TouchableOpacity
+          style={styles.continueButton}
+          onPress={() => router.push("../(tabs)")}
+        >
           <Text style={styles.continueText}>Go To Homepage</Text>
         </TouchableOpacity>
       </View>
@@ -88,6 +115,8 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: "#939393",
+    width: "90%",
+    textAlign: "center",
     marginBottom: 10,
   },
   bottomContainer: {
