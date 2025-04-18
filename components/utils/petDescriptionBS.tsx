@@ -12,13 +12,16 @@ import {
 import React, { useEffect, useState } from "react";
 
 type PetDescriptionProps = {
-  closeModal: () => void;
+  //closeModal: () => void;
+  onCloseAndOpenModal?: () => void; // NEW
 };
 
 const screenHeight = Dimensions.get("window").height;
 const WORD_LIMIT = 100;
 
-export const PetDescription = ({ closeModal }: PetDescriptionProps) => {
+export const PetDescription = ({
+  onCloseAndOpenModal,
+}: PetDescriptionProps) => {
   const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
   const [description, setDescription] = useState("");
   const dismissKeyboard = () => Keyboard.dismiss();
@@ -31,13 +34,17 @@ export const PetDescription = ({ closeModal }: PetDescriptionProps) => {
     }).start();
   }, [slideAnim]);
 
-  const handleClose = () => {
-    Animated.timing(slideAnim, {
-      toValue: screenHeight * 0.9,
-      duration: 300,
+  const [fadeAnim] = useState(new Animated.Value(1));
+  // When the modal closes, we animate it to slide down
+  const handleContinue = () => {
+    // Trigger fade out
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
       useNativeDriver: true,
     }).start(() => {
-      closeModal();
+      //closeModal(); // Call the closeModal prop to close the modal after animation
+      onCloseAndOpenModal && onCloseAndOpenModal();
     });
   };
 
@@ -105,7 +112,7 @@ export const PetDescription = ({ closeModal }: PetDescriptionProps) => {
               styles.ContinueButton,
               isDescriptionEmpty && { backgroundColor: "#ccc" }, // Change color when disabled
             ]}
-            onPress={handleClose}
+            onPress={handleContinue}
             disabled={isDescriptionEmpty} // Disable button if description is empty
           >
             <Text style={styles.ContinueText}>Continue</Text>

@@ -9,9 +9,11 @@ import {
   Pressable,
 } from "react-native";
 import React, { useEffect, useState } from "react";
+import { Modal } from "@/components/utils/modal";
+import { PetBreedBS } from "@/components/utils/petBreedBS";
 
-type petCategoryBSProps = {
-  closeModal: () => void;
+type PetCategoryProps = {
+  onCloseAndOpenModal?: () => void; // NEW
 };
 
 const screenHeight = Dimensions.get("window").height;
@@ -36,10 +38,11 @@ const categories = [
   },
 ];
 
-export const PetCategoryBS = ({ closeModal }: petCategoryBSProps) => {
+export const PetCategoryBS = ({ onCloseAndOpenModal }: PetCategoryProps) => {
   const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
+  const [petBreedBSOpen, setPetBreedBSOpen] = useState(false);
+  const [fadeAnim] = useState(new Animated.Value(1));
   useEffect(() => {
     Animated.timing(slideAnim, {
       toValue: 0, // Animate the modal to position 0 (visible)
@@ -48,24 +51,32 @@ export const PetCategoryBS = ({ closeModal }: petCategoryBSProps) => {
     }).start();
   }, [slideAnim]); // Only runs when the component mounts
 
-  // When the modal closes, we animate it to slide down
-  const handleClose = () => {
-    Animated.timing(slideAnim, {
-      toValue: screenHeight * 0.9, // Move the modal out of the screen (down)
-      duration: 300,
+  const handleContinue = () => {
+    // Trigger fade out
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
       useNativeDriver: true,
-    }).start(() => {
-      closeModal(); // Call the closeModal prop to close the modal after animation
-    });
+    }).start();
+    //closeModal();
+    onCloseAndOpenModal && onCloseAndOpenModal();
   };
 
   return (
     <Animated.View
-      style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
+      style={[
+        styles.container,
+        {
+          transform: [{ translateY: slideAnim }],
+          // opacity: fadeAnim,
+        },
+      ]}
     >
       <View style={styles.indicator} />
       <Text style={styles.title}>Choose a category</Text>
-      <Text style={styles.subTitle}>Select a category that fits your needs below.</Text>
+      <Text style={styles.subTitle}>
+        Select a category that fits your needs below.
+      </Text>
 
       {categories.map((item, index) => (
         <Pressable
@@ -94,7 +105,9 @@ export const PetCategoryBS = ({ closeModal }: petCategoryBSProps) => {
               backgroundColor: selectedCategory ? "#2BBFFF" : "#ccc", // Change color if selected
             },
           ]}
-          onPress={handleClose}
+          onPress={() => {
+            handleContinue();
+          }}
           disabled={!selectedCategory} // Disable button if no category is selected
         >
           <Text style={styles.ContinueText}>Continue</Text>

@@ -1,4 +1,5 @@
-import React from "react";
+import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
     StyleSheet,
     Text,
@@ -10,8 +11,37 @@ import {
   } from "react-native";
   
   
-  export const AccountDisabled = () => {
+  type AccountDisabledProps = {
+    closeModal: () => void;
+  };
+  const screenHeight = Dimensions.get("window").height;
+
+  export const AccountDisabled = ({ closeModal }: AccountDisabledProps) => {
+    const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
+    useEffect(() => {
+      Animated.timing(slideAnim, {
+        toValue: 0, // Animate the modal to position 0 (visible)
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }, [slideAnim]); // Only runs when the component mounts
   
+    // When the modal closes, we animate it to slide down
+    const handleClose = (callback: () => void) => {
+      Animated.timing(slideAnim, {
+        toValue: screenHeight * 0.9, // Move the modal out of the screen (down)
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        closeModal(); // Close the modal after animation
+  
+        // Add a delay before navigating
+        setTimeout(() => {
+          callback(); // Then execute the callback (navigation)
+        }, 50); // Delay in milliseconds (500ms here, you can adjust as needed)
+      });
+    };
+
     return (
       <Animated.View
         style={styles.container}
@@ -28,9 +58,14 @@ import {
   
   
         <View style={styles.buttonsContainer}>
-          <TouchableOpacity style={styles.closeButton}>
-            <Text style={styles.closeText}>Close</Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() =>
+            handleClose(() => router.push("/(onboarding)/getStarted"))
+          }
+        >
+          <Text style={styles.closeText}>Close</Text>
+        </TouchableOpacity>
         </View>
       </Animated.View>
     );

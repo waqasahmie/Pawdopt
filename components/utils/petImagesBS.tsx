@@ -13,17 +13,20 @@ import * as ImagePicker from "expo-image-picker";
 import { FontAwesome6 } from "@expo/vector-icons";
 
 type PetImagesProps = {
-  closeModal: () => void;
+  //closeModal: () => void;
+  onCloseAndOpenModal?: () => void; // NEW
 };
 
 const screenHeight = Dimensions.get("window").height;
 
 const MAX_IMAGES = 5;
 
-export const PetImages = ({ closeModal }: PetImagesProps) => {
+export const PetImages = ({ onCloseAndOpenModal }: PetImagesProps) => {
   const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
 
-  const [images, setImages] = useState<(string | null)[]>(Array(MAX_IMAGES).fill(null));
+  const [images, setImages] = useState<(string | null)[]>(
+    Array(MAX_IMAGES).fill(null)
+  );
   const [imageCount, setImageCount] = useState(0); // Track the number of uploaded images
 
   const handleImagePicker = (index: number) => {
@@ -80,14 +83,17 @@ export const PetImages = ({ closeModal }: PetImagesProps) => {
     }).start();
   }, [slideAnim]);
 
+  const [fadeAnim] = useState(new Animated.Value(1));
   // When the modal closes, we animate it to slide down
-  const handleClose = () => {
-    Animated.timing(slideAnim, {
-      toValue: screenHeight * 0.9, // Move the modal out of the screen (down)
-      duration: 300,
+  const handleContinue = () => {
+    // Trigger fade out
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
       useNativeDriver: true,
     }).start(() => {
-      closeModal(); // Call the closeModal prop to close the modal after animation
+      //closeModal(); // Call the closeModal prop to close the modal after animation
+      onCloseAndOpenModal && onCloseAndOpenModal();
     });
   };
 
@@ -97,9 +103,7 @@ export const PetImages = ({ closeModal }: PetImagesProps) => {
     >
       <View style={styles.indicator} />
       <Text style={styles.title}>Upload images</Text>
-      <Text style={styles.subTitle}>
-        Upload images of your pet below.
-      </Text>
+      <Text style={styles.subTitle}>Upload images of your pet below.</Text>
 
       <View style={styles.gridContainer}>
         {images.map((uri, index) => (
@@ -124,8 +128,11 @@ export const PetImages = ({ closeModal }: PetImagesProps) => {
 
       <View style={styles.buttonsContainer}>
         <TouchableOpacity
-          style={[styles.ContinueButton, { backgroundColor: imageCount === MAX_IMAGES ? "#2BBFFF" : "#ccc" }]}
-          onPress={handleClose}
+          style={[
+            styles.ContinueButton,
+            { backgroundColor: imageCount === MAX_IMAGES ? "#2BBFFF" : "#ccc" },
+          ]}
+          onPress={handleContinue}
           disabled={imageCount !== MAX_IMAGES} // Disable button if not 5 images
         >
           <Text style={styles.ContinueText}>Continue</Text>
@@ -212,4 +219,3 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
-
