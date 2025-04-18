@@ -145,7 +145,7 @@ export default function SignInScreen() {
             </TouchableOpacity>
 
             {/* Continue Button */}
-            <TouchableOpacity style={styles.continueButton}>
+            <TouchableOpacity style={styles.continueButton} onPress={() => router.push("/(vetTabs)")}>
               <Text style={styles.continueText}>Continue</Text>
             </TouchableOpacity>
           </View>
