@@ -53,7 +53,7 @@ const Toast = forwardRef(({}, ref) => {
         type,
       });
       toastTopAnimation.value = withSequence(
-        withTiming(Math.max(Number(0), 15)),
+        withTiming(Math.max(Number(0), 50)),
         withDelay(
           duration,
           withTiming(-1500, undefined, finish => {

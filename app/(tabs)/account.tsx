@@ -104,7 +104,7 @@ export default function ForgotPasswordPhoneScreen() {
 
               <Pressable
                 onPress={() =>
-                  router.push("/(accountScreens)/securitySettings")
+                  router.push('/(accountScreens)/securitySettings')
                 }
               >
                 <View style={styles.settingCard}>

@@ -6,6 +6,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from "expo-router";
+import PasswordStrengthMeter from "@/components/utils/PasswordStrengthMeter";
 
 export default function SignupCreatePassword() {
   const navigation = useNavigation();
@@ -16,8 +17,14 @@ export default function SignupCreatePassword() {
   const toggleShowPassword = () => setShowPassword(!showPassword);
 
   const isValidPassword = (password: string) => {
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    return passwordRegex.test(password);
+    const checks = {
+      length: password.length >= 8,
+      upper: /[A-Z]/.test(password),
+      lower: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[^A-Za-z0-9]/.test(password),
+    };
+    return Object.values(checks).every(Boolean);
   };
 
   const dismissKeyboard = () => Keyboard.dismiss();
@@ -69,7 +76,7 @@ export default function SignupCreatePassword() {
           </View>
           {/* Error Message */}
           {!isValidPassword(password) && password.length > 0 && (
-            <Text style={styles.errorText}>Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character.</Text>
+            <PasswordStrengthMeter password={password} />
           )}
 
           {/* Terms & Conditions */}

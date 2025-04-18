@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Switch } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Switch, SafeAreaView } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
@@ -28,7 +28,7 @@ export default function NotificationSettings() {
   ]
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
         <StatusBar barStyle="dark-content" />
 
@@ -52,7 +52,7 @@ export default function NotificationSettings() {
           </View>
         ))}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

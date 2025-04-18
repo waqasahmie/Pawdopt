@@ -1,5 +1,6 @@
 import { FemaleSymbolIcon, MaleSymbolIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
+import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   View,
@@ -244,14 +245,14 @@ export default function PetAdoptionScreen() {
         Animated.parallel([
           Animated.spring(pillAnim, {
             toValue: x,
-            stiffness: 150,      // lower = softer spring
-            damping: 20,  
+            stiffness: 150, // lower = softer spring
+            damping: 20,
             useNativeDriver: false,
           }),
           Animated.spring(pillWidth, {
             toValue: width,
-            stiffness: 150,      // lower = softer spring
-            damping: 20,  
+            stiffness: 150, // lower = softer spring
+            damping: 20,
             useNativeDriver: false,
           }),
         ]).start();
@@ -320,23 +321,37 @@ export default function PetAdoptionScreen() {
             showsVerticalScrollIndicator={false}
           >
             {filteredPets.map((pet) => (
-              <View key={pet.id} style={styles.petCard}>
-              <Image source={pet.image} style={styles.petImage} />
-              <View style={styles.petInfo}>
-                <Text style={styles.breedText}>{pet.breed}</Text>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text style={styles.nameText}>{pet.name}</Text>
-                  <View style={styles.gender}>
-                    {pet.gender === "Female" ? (
-                      <HugeiconsIcon icon={FemaleSymbolIcon} size={ms(16)} color="#2BBFFF" strokeWidth={2.5}/>
-                    ) : pet.gender === "Male" ? (
-                      <HugeiconsIcon icon={MaleSymbolIcon} size={ms(16)} color="#2BBFFF" strokeWidth={2.5}/>
-                    ) : null}
+              <TouchableOpacity
+                key={pet.id}
+                style={styles.petCard}
+                onPress={() => router.push("./(others)/petDetail")}
+              >
+                <Image source={pet.image} style={styles.petImage} />
+                <View style={styles.petInfo}>
+                  <Text style={styles.breedText}>{pet.breed}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Text style={styles.nameText}>{pet.name}</Text>
+                    <View style={styles.gender}>
+                      {pet.gender === "Female" ? (
+                        <HugeiconsIcon
+                          icon={FemaleSymbolIcon}
+                          size={ms(16)}
+                          color="#2BBFFF"
+                          strokeWidth={2.5}
+                        />
+                      ) : pet.gender === "Male" ? (
+                        <HugeiconsIcon
+                          icon={MaleSymbolIcon}
+                          size={ms(16)}
+                          color="#2BBFFF"
+                          strokeWidth={2.5}
+                        />
+                      ) : null}
+                    </View>
                   </View>
+                  <Text style={styles.distanceText}>{pet.distance}</Text>
                 </View>
-                <Text style={styles.distanceText}>{pet.distance}</Text>
-              </View>
-            </View>
+              </TouchableOpacity>
             ))}
             <Text style={styles.note}>Looks like you've reached the end!</Text>
           </ScrollView>

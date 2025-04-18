@@ -9,6 +9,7 @@ import {
   Image,
   Animated,
   Pressable,
+  SafeAreaView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -273,7 +274,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    marginTop: 20,
+    marginTop: 60,
     marginBottom: 40,
   },
   navText: {

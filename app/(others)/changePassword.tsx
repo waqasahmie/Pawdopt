@@ -5,6 +5,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import PasswordStrengthMeter from "@/components/utils/PasswordStrengthMeter";
 
 export default function changePassword() {
   const navigation = useNavigation();
@@ -27,8 +28,14 @@ export default function changePassword() {
   const toggleShowConfirmPassword = () => setShowConfirmPassword(!showConfirmPassword);
 
   const isValidPassword = (password: string) => {
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    return passwordRegex.test(password);
+    const checks = {
+      length: password.length >= 8,
+      upper: /[A-Z]/.test(password),
+      lower: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[^A-Za-z0-9]/.test(password),
+    };
+    return Object.values(checks).every(Boolean);
   };
 
   // Simulating the actual current password stored in the system
@@ -92,7 +99,7 @@ export default function changePassword() {
             </TouchableOpacity>
           </View>
           {!isValidPassword(password) && password.length > 0 && (
-            <Text style={styles.errorText}>Must Contain One Upper Case, Lower Case, Number & Special Character.</Text>
+            <PasswordStrengthMeter password={password} />
           )}
 
           {/* Confirm Password Input */}
@@ -164,7 +171,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    marginTop: 20,
+    marginTop: 60,
     marginBottom: 30,
   },
   textContainer: {
@@ -193,7 +200,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: "red",
-    fontSize: 10,
+    fontSize: 14,
     textAlign: "left",
     width: "100%",
   },

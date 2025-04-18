@@ -8,6 +8,7 @@ import {
   Switch,
   Pressable,
   ScrollView,
+  SafeAreaView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -53,7 +54,7 @@ export default function SecuritySettings() {
   ]
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
         <StatusBar barStyle="dark-content" />
 
@@ -84,10 +85,10 @@ export default function SecuritySettings() {
           <Pressable key={index} style={styles.cardContainer}
           onPress={() => {
             if (item.title === "Change Password") {
-              router.push("/changePassword"); // Adjust path to match your route file
+              router.push("/(others)/changePassword"); // Adjust path to match your route file
             }
             else if (item.title === "Delete Account") {
-              router.push("/deleteAccount"); // Adjust path to match your route file
+              router.push("/(others)/deleteAccount"); // Adjust path to match your route file
             }
           }}
           >
@@ -105,7 +106,7 @@ export default function SecuritySettings() {
         ))}
         </ScrollView>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -11,6 +11,7 @@ import {
   TextInput,
   Keyboard,
   Alert,
+  SafeAreaView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -132,7 +133,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
         <StatusBar barStyle="dark-content" />
         <View style={styles.headerContainer}>
@@ -306,7 +307,7 @@ export default function ProfileScreen() {
           </View>
         )}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -367,7 +368,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     width: "100%",
-    marginBottom: "85%",
+    marginBottom: "65%",
   },
   textContainer: {
     width: "100%", // Ensures full width
@@ -432,7 +433,7 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     position: "absolute",
-    bottom: 40, // Change to 50 if needed
+    bottom: 0, // Change to 50 if needed
     width: "100%",
   },
   continueButton: {

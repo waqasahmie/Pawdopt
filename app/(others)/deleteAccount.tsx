@@ -9,6 +9,7 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
+  SafeAreaView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -23,7 +24,7 @@ export default function DeleteAccount() {
   const [accountDisabledOpen, setAccountDisabledOpen] = useState(false);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
         <StatusBar barStyle="dark-content" />
         <View style={styles.headerContainer}>
@@ -152,7 +153,7 @@ export default function DeleteAccount() {
       <Modal style={{justifyContent:"center"}} isOpen={accountDisabledOpen} closeModal={() => setAccountDisabledOpen(false)}>
         <AccountDisabled closeModal={() => setAccountDisabledOpen(false)}/>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -184,7 +185,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     width: "100%",
-    marginBottom: "22%",
+    marginBottom: "10%",
   },
 
   Title: {

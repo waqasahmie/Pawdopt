@@ -9,6 +9,8 @@ import {
   StatusBar,
   Animated,
   TouchableWithoutFeedback,
+  Dimensions,
+  Platform,
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -29,6 +31,8 @@ interface VetTimingProps {
   startHour: number;
   endHour: number;
 }
+
+const {height} = Dimensions.get("window");
 
 export default function VetProfileScreen() {
   const navigation = useNavigation();
@@ -370,7 +374,7 @@ const styles = StyleSheet.create({
   },
   topImage: {
     width: "100%",
-    height: "80%",
+    height: height * 0.7,
     resizeMode: "cover",
   },
   backButton: {
@@ -397,7 +401,7 @@ const styles = StyleSheet.create({
   },
   overlayContainer: {
     position: "absolute",
-    top: 300,
+    top: height * 0.4,
     width: "100%",
     backgroundColor: "rgba(227, 227, 227, 0.5)",
     borderTopLeftRadius: 30,
@@ -464,7 +468,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 20,
-    height: "70%",
+    height: Platform.OS === "ios" ? height * 0.84 : height * 0.77,
   },
   sectionTitle: {
     fontSize: 16,
