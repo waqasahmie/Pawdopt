@@ -17,11 +17,12 @@ import Toast from "../../components/utils/toast";
 type PetInfoBSProps = {
   //closeModal: () => void;
   onCloseAndOpenModal?: () => void; // NEW
+  direction?: "vertical" | "horizontal"; // <-- NEW
 };
 
 const screenHeight = Dimensions.get("window").height;
 
-export const PetInfoBS = ({ onCloseAndOpenModal }: PetInfoBSProps) => {
+export const PetInfoBS = ({ onCloseAndOpenModal, direction = "vertical" }: PetInfoBSProps) => {
   const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
   const [petName, setPetName] = useState("");
   const [age, setAge] = useState("");
@@ -96,7 +97,16 @@ export const PetInfoBS = ({ onCloseAndOpenModal }: PetInfoBSProps) => {
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       <Animated.View
-        style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
+        style={[
+          styles.container,
+          {
+            transform: [
+              direction === "horizontal"
+                ? { translateX: slideAnim }
+                : { translateY: slideAnim },
+            ],
+          },
+        ]}
       >
         <View style={styles.indicator} />
         <Text style={styles.title}>Pet Details</Text>

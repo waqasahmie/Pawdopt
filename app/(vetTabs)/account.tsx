@@ -17,7 +17,7 @@ import { Preference } from '@/components/utils/preference'
 import { LinkedAccount } from '@/components/utils/linkedAccounts'
 import { router } from "expo-router";
 
-export default function ForgotPasswordPhoneScreen() {
+export default function VetAccountScreen() {
 
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [preferencesOpen, setPreferencesOpen] = useState(false)
@@ -38,7 +38,7 @@ export default function ForgotPasswordPhoneScreen() {
             showsVerticalScrollIndicator={false}
           >
             {/* Profile Section */}
-            <Pressable style={styles.profileCard}>
+            <Pressable style={styles.profileCard} onPress={() => router.push("/(others)/profileScreen")}>
               <Image
                 source={require("../../assets/images/avatar.png")}
                 style={styles.avatar}
@@ -54,28 +54,8 @@ export default function ForgotPasswordPhoneScreen() {
 
             <Text style={styles.sectionHeader}>Account Management</Text>
             <View style={styles.cardContainer}>
-              <Pressable onPress={() => setPreferencesOpen(true)}>
-                <View style={styles.settingCard}>
-                  <View style={styles.cardicon}>
-                    <Image
-                      source={require("../../assets/images/preferences.png")}
-                      style={{ width: 24, height: 23.04 }}
-                    />
-                  </View>
-                  <View>
-                    <Text style={styles.cardTitle}>Pet Preferences</Text>
-                    <Text style={styles.cardSubtitle}>
-                      View and change your pet preferences
-                    </Text>
-                  </View>
-                  <View style={styles.arrowIcon}>
-                    <Ionicons name="chevron-forward" size={20} color="#fff" />
-                  </View>
-                </View>
-              </Pressable>
-              <View style={styles.line} />
-
-              <Pressable>
+              
+              <Pressable onPress={() => router.push("/(others)/notificationsSettings")}>
                 <View style={styles.settingCard}>
                   <View style={styles.cardicon}>
                     <Image
@@ -96,7 +76,7 @@ export default function ForgotPasswordPhoneScreen() {
               </Pressable>
               <View style={styles.line} />
 
-              <Pressable>
+              <Pressable onPress={() => router.push("/(others)/securitySettings")}>
                 <View style={styles.settingCard}>
                   <View style={styles.cardicon}>
                     <Image
@@ -116,47 +96,6 @@ export default function ForgotPasswordPhoneScreen() {
                 </View>
               </Pressable>
               <View style={styles.line} />
-
-              <Pressable onPress={() => setLinkedAccountOpen(true)}>
-                <View style={styles.settingCard}>
-                  <View style={styles.cardicon}>
-                    <Image
-                      source={require("../../assets/images/link.png")}
-                      style={{ width: 24, height: 24 }}
-                    />
-                  </View>
-                  <View>
-                    <Text style={styles.cardTitle}>Linked Accounts</Text>
-                    <Text style={styles.cardSubtitle}>
-                      View and manage your linked accounts
-                    </Text>
-                  </View>
-                  <View style={styles.arrowIcon}>
-                    <Ionicons name="chevron-forward" size={20} color="#fff" />
-                  </View>
-                </View>
-              </Pressable>
-              <View style={styles.line} />
-
-              <Pressable>
-                <View style={styles.settingCard}>
-                  <View style={styles.cardicon}>
-                    <Image
-                      source={require("../../assets/images/listing.png")}
-                      style={{ width: 21, height: 15.75 }}
-                    />
-                  </View>
-                  <View>
-                    <Text style={styles.cardTitle}>My Listings</Text>
-                    <Text style={styles.cardSubtitle}>
-                      View and manage your listed pets
-                    </Text>
-                  </View>
-                  <View style={styles.arrowIcon}>
-                    <Ionicons name="chevron-forward" size={20} color="#fff" />
-                  </View>
-                </View>
-              </Pressable>
             </View>
 
             <Text style={styles.sectionHeader}>Support & Legal</Text>

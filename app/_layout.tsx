@@ -3,6 +3,7 @@ import { router, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+import { AppProvider } from '../hooks/AppContext';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -23,6 +24,7 @@ export default function RootLayout() {
   }
 
   return (
+    <AppProvider>
       <Stack initialRouteName="(onboarding)">
         <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }}/>
@@ -35,5 +37,6 @@ export default function RootLayout() {
         <Stack.Screen name="(vet)" options={{ headerShown: false }} />
         <Stack.Screen name="(others)" options={{ headerShown: false }} />
       </Stack>
+    </AppProvider>
   );
 }

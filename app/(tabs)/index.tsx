@@ -1,6 +1,6 @@
 import { FemaleSymbolIcon, MaleSymbolIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   View,
@@ -11,8 +11,20 @@ import {
   TouchableOpacity,
   Platform,
   Animated,
+  PanResponder,
+  Modal,
 } from "react-native";
 import { s, vs, ms } from "react-native-size-matters";
+import { ListModal } from "@/components/utils/listModal";
+import { PetCategoryBS } from "@/components/utils/petCategoryBS";
+import { CatBreedBS } from "@/components/utils/catBreedBS";
+import { DogBreedBS } from "@/components/utils/dogBreedBS";
+import { ParrotBreedBS } from "@/components/utils/parrotBreedBS";
+import { PetImages } from "@/components/utils/petImagesBS";
+import { PetDescription } from "@/components/utils/petDescriptionBS";
+import { PetInfoBS } from "@/components/utils/petInfoBS";
+import { PetSubmitted } from "@/components/utils/petSubmitted";
+import { Easing } from "react-native-reanimated";
 
 const bannerImages = [
   require("../../assets/images/bannerOne.png"),
@@ -184,6 +196,100 @@ export default function PetAdoptionScreen() {
   const currentIndex = useRef(0);
   const [activeDot, setActiveDot] = useState(0);
 
+  const [petCategoryBSOpen, setPetCategoryBSOpen] = useState(false);
+  const [petImagesBSOpen, setPetImagesBSOpen] = useState(false);
+  const [petDescriptionBSOpen, setPetDescriptionBSOpen] = useState(false);
+  const [petInfoBSOpen, setPetInfoBSOpen] = useState(false);
+  const [petSubmittedOpen, setPetSubmittedOpen] = useState(false);
+  const [petSelectedCategory, setPetSelectedCategory] = useState<string | null>(
+    null
+  );
+  const [dogBreedOpen, setDogBreedOpen] = useState(false);
+  const [catBreedOpen, setCatBreedOpen] = useState(false);
+  const [parrotBreedOpen, setParrotBreedOpen] = useState(false);
+  const { role } = useLocalSearchParams();
+  console.log("roleIndex", role);
+  //const pan = useRef(new Animated.ValueXY()).current;
+
+  const swipeTextOpacity = useRef(new Animated.Value(0)).current;
+  const swipeTextTranslateX = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    const loopAnimation = () => {
+      Animated.sequence([
+        // Slide from right to center with fade in
+        Animated.parallel([
+          Animated.timing(swipeTextOpacity, {
+            toValue: 1,
+            duration: 500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(swipeTextTranslateX, {
+            toValue: 0,
+            duration: 500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+  
+        // Hold in center
+        Animated.delay(1000),
+  
+        // Slide slightly left
+        Animated.timing(swipeTextTranslateX, {
+          toValue: -10,
+          duration: 300,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+  
+        // Fade out and slide smoothly back to right
+        Animated.parallel([
+          Animated.timing(swipeTextOpacity, {
+            toValue: 0,
+            duration: 300,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(swipeTextTranslateX, {
+            toValue: 30,
+            duration: 400, // smoother slide back
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+  
+        // Small pause before restart
+        Animated.delay(500),
+      ]).start(() => loopAnimation());
+    };
+  
+    loopAnimation();
+  }, []);
+  
+  
+  
+  const panResponder = useRef(
+    PanResponder.create({
+      // onMoveShouldSetPanResponder: (evt, gestureState) => {
+      //   // Detect left swipe
+      //   return gestureState.dx < -20;
+      // },
+
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        const { dx, dy } = gestureState;
+        return Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy);
+      },
+
+      onPanResponderRelease: (evt, gestureState) => {
+        if (gestureState.dx < -50) {
+          setPetCategoryBSOpen(true);
+        }
+      },
+    })
+  ).current;
+
   const dotAnimations = useRef(
     bannerImages.map(() => new Animated.Value(6))
   ).current;
@@ -286,6 +392,34 @@ export default function PetAdoptionScreen() {
           </View>
         </View>
 
+        {(role === "Organization" || role === "Owner") && (
+          <>
+            <View style={styles.listContainer} {...panResponder.panHandlers}>
+              <Animated.Text
+                style={[
+                  styles.swipeText,
+                  {
+                    opacity: swipeTextOpacity,
+                    transform: [
+                      { rotate: "90deg" },
+                      { translateX: swipeTextTranslateX },
+                    ],
+                  },
+                ]}
+              >
+                Swipe Left!
+              </Animated.Text>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => setPetCategoryBSOpen(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.buttonText}>List Your Pet</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
         <Text style={styles.title}>Pet Categories</Text>
         <View style={styles.categories}>
           {/* 🔧 Animated background pill */}
@@ -356,6 +490,112 @@ export default function PetAdoptionScreen() {
             <Text style={styles.note}>Looks like you've reached the end!</Text>
           </ScrollView>
         </View>
+        <ListModal
+          isOpen={petCategoryBSOpen}
+          closeModal={() => setPetCategoryBSOpen(false)}
+        >
+          <PetCategoryBS
+            // closeModal={() => setPetCategoryBSOpen(false)}
+            onSelectCategory={(category) => {
+              setPetSelectedCategory(category);
+              setPetCategoryBSOpen(false); // close category modal
+              // Open the relevant breed modal
+              if (category === "2") {
+                setDogBreedOpen(true);
+              } else if (category === "1") {
+                setCatBreedOpen(true);
+              } else if (category === "3") {
+                setParrotBreedOpen(true);
+              }
+            }}
+            onCloseAndOpenModal={() => {
+              setPetCategoryBSOpen(false);
+            }}
+            direction="horizontal"
+          />
+        </ListModal>
+        <ListModal
+          isOpen={catBreedOpen}
+          closeModal={() => setCatBreedOpen(false)}
+        >
+          <CatBreedBS
+            onCloseAndOpenModal={() => {
+              setCatBreedOpen(false);
+              setPetImagesBSOpen(true);
+            }}
+            direction="horizontal"
+          />
+        </ListModal>
+        <ListModal
+          isOpen={dogBreedOpen}
+          closeModal={() => setDogBreedOpen(false)}
+        >
+          <DogBreedBS
+            onCloseAndOpenModal={() => {
+              setDogBreedOpen(false);
+              setPetImagesBSOpen(true);
+            }}
+            direction="horizontal"
+          />
+        </ListModal>
+        <ListModal
+          isOpen={parrotBreedOpen}
+          closeModal={() => setParrotBreedOpen(false)}
+        >
+          <ParrotBreedBS
+            onCloseAndOpenModal={() => {
+              setParrotBreedOpen(false);
+              setPetImagesBSOpen(true);
+            }}
+            direction="horizontal"
+          />
+        </ListModal>
+
+        <ListModal
+          isOpen={petImagesBSOpen}
+          closeModal={() => setPetImagesBSOpen(false)}
+        >
+          <PetImages
+            onCloseAndOpenModal={() => {
+              setPetImagesBSOpen(false);
+              setPetDescriptionBSOpen(true);
+            }}
+            direction="horizontal"
+          />
+        </ListModal>
+        <ListModal
+          isOpen={petDescriptionBSOpen}
+          closeModal={() => setPetDescriptionBSOpen(false)}
+        >
+          <PetDescription
+            onCloseAndOpenModal={() => {
+              setPetDescriptionBSOpen(false);
+              setPetInfoBSOpen(true);
+            }}
+            direction="horizontal"
+          />
+        </ListModal>
+        <ListModal
+          isOpen={petInfoBSOpen}
+          closeModal={() => setPetInfoBSOpen(false)}
+        >
+          <PetInfoBS
+            onCloseAndOpenModal={() => {
+              setPetInfoBSOpen(false);
+              setPetSubmittedOpen(true);
+            }}
+            direction="horizontal"
+          />
+        </ListModal>
+        <ListModal
+          isOpen={petSubmittedOpen}
+          closeModal={() => setPetSubmittedOpen(false)}
+        >
+          <PetSubmitted
+            closeModal={() => setPetSubmittedOpen(false)}
+            direction="horizontal"
+          />
+        </ListModal>
       </View>
     </View>
   );
@@ -557,5 +797,37 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     color: "#ACACAC",
     marginBottom: ms(25),
+  },
+  listContainer: {
+    position: "absolute",
+    right: -22, // Pushes the button out partially from the right edge
+    top: 165,
+    transform: [{ rotate: "-90deg" }],
+    zIndex: 10,
+    alignItems: "center",
+  },
+  swipeText: {
+    fontSize: 12,
+    color: "#555",
+    marginBottom: 4,
+    bottom: 30,
+    transform: [{ rotate: "90deg" }],
+  },
+  button: {
+    backgroundColor: "#C9EFFF",
+    paddingTop: 4,
+    paddingBottom: 12,
+    paddingHorizontal: 10,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 1, height: 2 },
+    shadowRadius: 4,
+  },
+  buttonText: {
+    fontWeight: "500",
+    fontSize: 10,
   },
 });

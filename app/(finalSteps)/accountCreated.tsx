@@ -11,7 +11,7 @@ import {
 import Animated from "react-native-reanimated";
 
 export default function AccountCreated() {
-  const { from } = useLocalSearchParams();
+  const { from, role } = useLocalSearchParams();
   const isFromVet = from === "vet";
 
   return (
@@ -54,7 +54,7 @@ export default function AccountCreated() {
       <View style={styles.bottomContainer}>
         <TouchableOpacity
           style={styles.continueButton}
-          onPress={() => router.push("../(tabs)")}
+          onPress={() => router.push(`/(tabs)?role=${role}`)}
         >
           <Text style={styles.continueText}>Go To Homepage</Text>
         </TouchableOpacity>

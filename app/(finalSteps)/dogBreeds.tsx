@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 const breeds = [
   "Husky",
   "Bulldog",
@@ -30,6 +30,7 @@ const breeds = [
 export default function BreedPreferences() {
   const navigation = useNavigation();
   const [selectedBreeds, setSelectedBreeds] = useState<string[]>([]);
+  const { role } = useLocalSearchParams();
 
   const toggleSelection = (breed: string) => {
     if (selectedBreeds.includes(breed)) {
@@ -106,7 +107,7 @@ export default function BreedPreferences() {
 
         {/* Continue Button */}
         <View style={styles.bottomContainer}>
-          <TouchableOpacity style={styles.continueButton} onPress={() => router.push("/(finalSteps)/ownerAdopter")}>
+          <TouchableOpacity style={styles.continueButton} onPress={() => router.push(`/(finalSteps)/ownerAdopter?role=${role}`)}>
             <Text style={styles.continueText}>Continue</Text>
           </TouchableOpacity>
         </View>

@@ -20,7 +20,7 @@ import {
 import * as Haptics from "expo-haptics";
 import Toast from "../../components/utils/toast";
 import { PetCategoryBS } from "@/components/utils/petCategoryBS";
-import { PetBreedBS } from "@/components/utils/petBreedBS";
+import { CatBreedBS } from "@/components/utils/catBreedBS";
 import { PetImages } from "@/components/utils/petImagesBS";
 import { PetDescription } from "@/components/utils/petDescriptionBS";
 import { PetInfoBS } from "@/components/utils/petInfoBS";
@@ -28,6 +28,8 @@ import { PetSubmitted } from "@/components/utils/petSubmitted";
 import { Modal } from "@/components/utils/modal";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import { Edit02Icon } from "@hugeicons/core-free-icons";
+import { DogBreedBS } from "@/components/utils/dogBreedBS";
+import { ParrotBreedBS } from "@/components/utils/parrotBreedBS";
 
 export default function MyListings() {
   const toastRef = useRef<any>({});
@@ -99,11 +101,14 @@ export default function MyListings() {
   ]);
 
   const [petCategoryBSOpen, setPetCategoryBSOpen] = useState(false);
-  const [petBreedBSOpen, setPetBreedBSOpen] = useState(false);
   const [petImagesBSOpen, setPetImagesBSOpen] = useState(false);
   const [petDescriptionBSOpen, setPetDescriptionBSOpen] = useState(false);
   const [petInfoBSOpen, setPetInfoBSOpen] = useState(false);
   const [petSubmittedOpen, setPetSubmittedOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [dogBreedOpen, setDogBreedOpen] = useState(false);
+  const [catBreedOpen, setCatBreedOpen] = useState(false);
+  const [parrotBreedOpen, setParrotBreedOpen] = useState(false);
 
   // Function to delete an item
   const deleteItem = (id: number, petName: string) => {
@@ -197,23 +202,51 @@ export default function MyListings() {
         >
           <PetCategoryBS
             // closeModal={() => setPetCategoryBSOpen(false)}
+            onSelectCategory={(category) => {
+              setSelectedCategory(category);
+              setPetCategoryBSOpen(false); // close category modal
+              // Open the relevant breed modal
+              if (category === "2") {
+                setDogBreedOpen(true);
+              } else if (category === "1") {
+                setCatBreedOpen(true);
+              } else if (category === "3") {
+                setParrotBreedOpen(true);
+              }
+            }}
             onCloseAndOpenModal={() => {
               setPetCategoryBSOpen(false);
-              setPetBreedBSOpen(true);
             }}
           />
         </Modal>
-        <Modal
-          isOpen={petBreedBSOpen}
-          closeModal={() => setPetBreedBSOpen(false)}
-        >
-          <PetBreedBS
+        <Modal isOpen={catBreedOpen} closeModal={() => setCatBreedOpen(false)}>
+          <CatBreedBS
             onCloseAndOpenModal={() => {
-              setPetBreedBSOpen(false);
+              setCatBreedOpen(false);
               setPetImagesBSOpen(true);
             }}
           />
         </Modal>
+        <Modal isOpen={dogBreedOpen} closeModal={() => setDogBreedOpen(false)}>
+          <DogBreedBS
+            onCloseAndOpenModal={() => {
+              setDogBreedOpen(false);
+              setPetImagesBSOpen(true);
+            }}
+          />
+        </Modal>
+        <Modal
+          isOpen={parrotBreedOpen}
+          closeModal={() => setParrotBreedOpen(false)}
+        >
+          <ParrotBreedBS
+            onCloseAndOpenModal={() => {
+              setParrotBreedOpen(false);
+              setPetImagesBSOpen(true);
+            }}
+          />
+        </Modal>
+
         <Modal
           isOpen={petImagesBSOpen}
           closeModal={() => setPetImagesBSOpen(false)}

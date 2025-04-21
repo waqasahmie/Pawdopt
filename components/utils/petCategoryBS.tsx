@@ -9,11 +9,11 @@ import {
   Pressable,
 } from "react-native";
 import React, { useEffect, useState } from "react";
-import { Modal } from "@/components/utils/modal";
-import { PetBreedBS } from "@/components/utils/petBreedBS";
 
 type PetCategoryProps = {
   onCloseAndOpenModal?: () => void; // NEW
+  onSelectCategory?: (category: string) => void;
+  direction?: "vertical" | "horizontal"; // <-- NEW
 };
 
 const screenHeight = Dimensions.get("window").height;
@@ -38,10 +38,9 @@ const categories = [
   },
 ];
 
-export const PetCategoryBS = ({ onCloseAndOpenModal }: PetCategoryProps) => {
+export const PetCategoryBS = ({ onCloseAndOpenModal, onSelectCategory, direction = "vertical" }: PetCategoryProps) => {
   const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [petBreedBSOpen, setPetBreedBSOpen] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(1));
   useEffect(() => {
     Animated.timing(slideAnim, {
@@ -60,6 +59,9 @@ export const PetCategoryBS = ({ onCloseAndOpenModal }: PetCategoryProps) => {
     }).start();
     //closeModal();
     onCloseAndOpenModal && onCloseAndOpenModal();
+    if (selectedCategory) {
+      onSelectCategory && onSelectCategory(selectedCategory);
+    }
   };
 
   return (
@@ -67,8 +69,11 @@ export const PetCategoryBS = ({ onCloseAndOpenModal }: PetCategoryProps) => {
       style={[
         styles.container,
         {
-          transform: [{ translateY: slideAnim }],
-          // opacity: fadeAnim,
+          transform: [
+            direction === "horizontal"
+              ? { translateX: slideAnim }
+              : { translateY: slideAnim },
+          ],
         },
       ]}
     >

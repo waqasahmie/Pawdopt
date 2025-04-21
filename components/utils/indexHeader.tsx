@@ -1,5 +1,5 @@
 // components/CustomHeader.tsx
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Image,
   Platform,
+  Animated,
 } from "react-native";
 import { ms, vs } from "react-native-size-matters"; // assuming you're using this
 import { HugeiconsIcon } from "@hugeicons/react-native";
@@ -16,9 +17,52 @@ import {
   Stethoscope02Icon,
 } from "@hugeicons/core-free-icons";
 import { router } from "expo-router";
+import { Easing } from "react-native-reanimated";
 
 const CustomHeader = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const exploreTextTranslateX = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const shake = Animated.loop(
+      Animated.sequence([
+        Animated.timing(exploreTextTranslateX, {
+          toValue: -3,
+          duration: 80,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(exploreTextTranslateX, {
+          toValue: 3,
+          duration: 80,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(exploreTextTranslateX, {
+          toValue: -2,
+          duration: 70,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(exploreTextTranslateX, {
+          toValue: 2,
+          duration: 70,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.timing(exploreTextTranslateX, {
+          toValue: 0,
+          duration: 60,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.delay(500), // pause before looping again
+      ])
+    );
+
+    shake.start();
+
+    return () => shake.stop(); // cleanup on unmount
+  }, []);
 
   return (
     <View style={styles.headerContainer}>
@@ -52,8 +96,27 @@ const CustomHeader = () => {
       </View>
 
       <View style={styles.rightSection}>
-        <HugeiconsIcon icon={Stethoscope02Icon} size={ms(22)} onPress={() => router.push('./(vet)')}/>
-        <HugeiconsIcon icon={Notification03Icon} size={ms(22)} />
+        <HugeiconsIcon
+          icon={Stethoscope02Icon}
+          size={ms(22)}
+          onPress={() => router.push("./(vet)")}
+        />
+        <Animated.Text
+          style={[
+            styles.exploreText,
+            {
+              transform: [{ translateX: exploreTextTranslateX }],
+            },
+          ]}
+        >
+          Explore Vet
+        </Animated.Text>
+
+        <HugeiconsIcon
+          icon={Notification03Icon}
+          size={ms(22)}
+          onPress={() => router.push("./(others)/notifications")}
+        />
       </View>
     </View>
   );
@@ -120,6 +183,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+  },
+  exploreText: {
+    fontSize: 6,
+    backgroundColor: "#2bbfff",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    color: "#444",
+    position: "absolute",
+    right: 18, // wherever you want
+    top: 30, // wherever you want
+    alignSelf: "center",
   },
 });
 

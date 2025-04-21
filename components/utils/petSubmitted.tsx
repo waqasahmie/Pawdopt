@@ -14,11 +14,12 @@ import { FontAwesome6 } from "@expo/vector-icons";
 
 type PetSubmittedProps = {
   closeModal: () => void;
+  direction?: "vertical" | "horizontal"; // <-- NEW
 };
 
 const screenHeight = Dimensions.get("window").height;
 
-export const PetSubmitted = ({ closeModal }: PetSubmittedProps) => {
+export const PetSubmitted = ({ closeModal, direction = "vertical" }: PetSubmittedProps) => {
   const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
 
   useEffect(() => {
@@ -50,7 +51,16 @@ export const PetSubmitted = ({ closeModal }: PetSubmittedProps) => {
 
   return (
     <Animated.View
-      style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
+      style={[
+        styles.container,
+        {
+          transform: [
+            direction === "horizontal"
+              ? { translateX: slideAnim }
+              : { translateY: slideAnim },
+          ],
+        },
+      ]}
     >
       <View style={styles.indicator} />
       <View style={styles.innerContainer}>

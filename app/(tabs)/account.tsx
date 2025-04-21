@@ -17,7 +17,7 @@ import { Preference } from "@/components/utils/preference";
 import { LinkedAccount } from "@/components/utils/linkedAccounts";
 import { router } from "expo-router";
 
-export default function ForgotPasswordPhoneScreen() {
+export default function AccountScreen() {
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [linkedAccountOpen, setLinkedAccountOpen] = useState(false);

@@ -15,26 +15,28 @@ import {
   Search01Icon,
   Stethoscope02Icon,
 } from "@hugeicons/core-free-icons";
+import { router } from "expo-router";
 
 const CustomHeader = () => {
-  const [searchTerm, setSearchTerm] = useState("");
+
 
   return (
     <View style={styles.headerContainer}>
       <View style={styles.leftSection}>
         <View style={styles.greeting}>
-          <Text style={styles.greetingText}>Hey, </Text>
+          <Text style={styles.greetingText}>Hello, </Text>
           <Text style={styles.username}>Dr Asad!</Text>
         </View>
-        <Image
-          source={require("../../assets/images/Pawprint.png")}
-          style={styles.paw}
-        />
       </View>
 
       <View style={styles.rightSection}>
-        <HugeiconsIcon icon={Stethoscope02Icon} size={ms(22)} />
-        <HugeiconsIcon icon={Notification03Icon} size={ms(22)} />
+        <HugeiconsIcon
+          icon={Notification03Icon}
+          size={ms(22)}
+          onPress={() => {
+            router.push("/(others)/notifications");
+          }}
+        />
       </View>
     </View>
   );

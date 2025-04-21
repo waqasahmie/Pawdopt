@@ -8,27 +8,29 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 
-type PetBreedBSProps = {
+type ParrotBreedBSProps = {
   // closeModal: () => void;
   onCloseAndOpenModal?: () => void; // NEW
+  direction?: "vertical" | "horizontal"; // <-- NEW
 };
 
 const screenHeight = Dimensions.get("window").height;
 const breeds = [
-  "Persian",
-  "Himalayan",
-  "British Shorthair",
-  "Ragdoll",
-  "Siamese",
-  "Scottish Fold",
-  "Exotic Shorthair",
-  "American Shorthair",
-  "Siberian",
-  "Maine Coon",
-  "Russian Blue",
+  "Cockatoo",
+  "Blue & Gold Macaw",
+  "Scarlet Macaw",
+  "African Grey",
+  "Moluccan Cockatoo",
+  "Sun Conure",
+  "Mitchell Cockatoo",
+  "Love Birds",
+  "Budgie",
+  "Mollucan Eclectus",
+  "Ring Neck",
+  "Cockatiel",
 ];
 
-export const PetBreedBS = ({ onCloseAndOpenModal }: PetBreedBSProps) => {
+export const ParrotBreedBS = ({ onCloseAndOpenModal, direction = "vertical" }: ParrotBreedBSProps) => {
   const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
 
   const [selectedBreeds, setSelectedBreeds] = useState<string[]>([]);
@@ -66,7 +68,16 @@ export const PetBreedBS = ({ onCloseAndOpenModal }: PetBreedBSProps) => {
 
   return (
     <Animated.View
-      style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
+      style={[
+        styles.container,
+        {
+          transform: [
+            direction === "horizontal"
+              ? { translateX: slideAnim }
+              : { translateY: slideAnim },
+        ],
+      },
+      ]}
     >
       <View style={styles.indicator} />
       <Text style={styles.title}>Choose a category</Text>

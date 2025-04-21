@@ -170,7 +170,7 @@ const allPets = [
   },
 ];
 
-export default function PetAdoptionScreen() {
+export default function FavoriteScreen() {
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   const categories = ["All", "Cats", "Dogs", "Parrots"];

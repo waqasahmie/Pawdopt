@@ -73,7 +73,7 @@ export default function FinalStepsAdopterowner() {
 
   useEffect(() => {
     if (
-      organizationName &&
+      organizationName ||
       firstName &&
       lastName &&
       value &&
@@ -216,7 +216,7 @@ export default function FinalStepsAdopterowner() {
             <ScrollView
               contentContainerStyle={{ flexGrow: 1 }}
               showsVerticalScrollIndicator={false}
-              keyboardDismissMode="on-drag"
+              // keyboardDismissMode="on-drag"
             >
               {/* Input Fields */}
               {role === "Organization" && (
@@ -361,7 +361,7 @@ export default function FinalStepsAdopterowner() {
               isButtonDisabled && styles.disabledButton,
             ]}
             disabled={isButtonDisabled}
-            onPress={() => router.push("/(finalSteps)/accountCreated")}
+            onPress={() => router.push(`/(finalSteps)/accountCreated?role=${role}`)}
           >
             <Text style={styles.continueText}>Finish</Text>
           </TouchableOpacity>

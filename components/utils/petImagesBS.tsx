@@ -15,13 +15,14 @@ import { FontAwesome6 } from "@expo/vector-icons";
 type PetImagesProps = {
   //closeModal: () => void;
   onCloseAndOpenModal?: () => void; // NEW
+  direction?: "vertical" | "horizontal"; // <-- NEW
 };
 
 const screenHeight = Dimensions.get("window").height;
 
 const MAX_IMAGES = 5;
 
-export const PetImages = ({ onCloseAndOpenModal }: PetImagesProps) => {
+export const PetImages = ({ onCloseAndOpenModal, direction = "vertical" }: PetImagesProps) => {
   const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
 
   const [images, setImages] = useState<(string | null)[]>(
@@ -99,7 +100,16 @@ export const PetImages = ({ onCloseAndOpenModal }: PetImagesProps) => {
 
   return (
     <Animated.View
-      style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
+      style={[
+        styles.container,
+        {
+          transform: [
+            direction === "horizontal"
+              ? { translateX: slideAnim }
+              : { translateY: slideAnim },
+        ],
+      },
+      ]}
     >
       <View style={styles.indicator} />
       <Text style={styles.title}>Upload images</Text>

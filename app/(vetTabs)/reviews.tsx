@@ -283,7 +283,7 @@ export default function VetReviewsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>User Reviews</Text>
+      
       <View style={styles.statsRow}>
         <Text style={styles.avgRating}>{averageRating}</Text>
         <StarRating rating={Math.round(Number(averageRating))} />
@@ -330,7 +330,7 @@ export default function VetReviewsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#FFF",
     paddingHorizontal: 20,
     paddingTop: 20,
   },

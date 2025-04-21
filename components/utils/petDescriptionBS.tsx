@@ -14,6 +14,7 @@ import React, { useEffect, useState } from "react";
 type PetDescriptionProps = {
   //closeModal: () => void;
   onCloseAndOpenModal?: () => void; // NEW
+  direction?: "vertical" | "horizontal"; // <-- NEW
 };
 
 const screenHeight = Dimensions.get("window").height;
@@ -21,6 +22,7 @@ const WORD_LIMIT = 100;
 
 export const PetDescription = ({
   onCloseAndOpenModal,
+  direction = "vertical",
 }: PetDescriptionProps) => {
   const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
   const [description, setDescription] = useState("");
@@ -75,7 +77,16 @@ export const PetDescription = ({
   return (
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
       <Animated.View
-        style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
+        style={[
+          styles.container,
+          {
+            transform: [
+              direction === "horizontal"
+                ? { translateX: slideAnim }
+                : { translateY: slideAnim },
+            ],
+          },
+        ]}
       >
         <View style={styles.indicator} />
         <Text style={styles.title}>Pet Description</Text>

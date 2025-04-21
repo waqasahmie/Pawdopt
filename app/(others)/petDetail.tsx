@@ -9,13 +9,19 @@ import {
   Image,
   Animated,
   TouchableWithoutFeedback,
+  Pressable,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { CoverFlowCarousel } from "@/components/utils/petCarousel";
-import { Call02Icon, Comment01Icon, Share08Icon } from "@hugeicons/core-free-icons";
+import {
+  Call02Icon,
+  Comment01Icon,
+  Share08Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
+import { router } from "expo-router";
 
 const Images = [
   require("../../assets/images/pet1.jpg"),
@@ -90,7 +96,7 @@ export default function PetDetail() {
         </View>
 
         <View style={styles.coverflow}>
-        <CoverFlowCarousel images={Images} />
+          <CoverFlowCarousel images={Images} />
         </View>
 
         <View style={styles.infoSection}>
@@ -121,31 +127,36 @@ export default function PetDetail() {
               ))}
             </ScrollView>
 
-            <View style={styles.ownerBox}>
-            <View>
-          <Image
-            source={require("../../assets/images/user1.png")}
-            style={styles.ownerImage}
-          />
-        </View>
+            <Pressable style={styles.ownerBox} onPress={() => router.push('./ownerDetails')}>
+              <View>
+                <Image
+                  source={require("../../assets/images/user1.png")}
+                  style={styles.ownerImage}
+                />
+              </View>
               <View style={styles.ownerTextWrapper}>
                 <Text style={styles.ownerName}>Waqas Ahmed</Text>
                 <Text style={styles.ownerRole}>Pet Owner</Text>
               </View>
               <View style={styles.contactIcons}>
                 <TouchableOpacity style={styles.contactIconButton}>
-                <HugeiconsIcon icon={Call02Icon} size={20} color="black" />
+                  <HugeiconsIcon icon={Call02Icon} size={20} color="black" />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.contactIconButton}>
-                <HugeiconsIcon icon={Comment01Icon} size={20} color="black" />
+                  <HugeiconsIcon icon={Comment01Icon} size={20} color="black" />
                 </TouchableOpacity>
               </View>
-            </View>
+            </Pressable>
 
             <View style={styles.aboutSection}>
               <Text style={styles.aboutTitle}>About</Text>
               <Text style={styles.aboutDescription}>
-              Persian cats, known for their luxurious long fur, round faces, and gentle personalities, are one of the most beloved and recognizable breeds in the world. Originating from Persia (modern-day Iran), these cats have been admired for centuries and continue to captivate cat enthusiasts with their distinctive appearance and sweet demeanor.                                          
+                Persian cats, known for their luxurious long fur, round faces,
+                and gentle personalities, are one of the most beloved and
+                recognizable breeds in the world. Originating from Persia
+                (modern-day Iran), these cats have been admired for centuries
+                and continue to captivate cat enthusiasts with their distinctive
+                appearance and sweet demeanor.
               </Text>
             </View>
           </ScrollView>
@@ -155,7 +166,7 @@ export default function PetDetail() {
             <Text style={styles.priceLabel}>Price</Text>
             <Text style={styles.priceValue}>Rs 5000</Text>
           </View>
-          <TouchableOpacity style={styles.adoptButton}>
+          <TouchableOpacity style={styles.adoptButton} onPress={() => router.push("/(others)/payment")}>
             <Text style={styles.adoptText}>Adopt Me</Text>
           </TouchableOpacity>
         </View>
@@ -185,8 +196,8 @@ const styles = StyleSheet.create({
   },
   coverflow: {
     height: 250,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   circle: {
     width: 35,
@@ -274,7 +285,7 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     borderRadius: 16,
     paddingHorizontal: 12,
-    paddingVertical:8,
+    paddingVertical: 8,
     marginBottom: 10,
   },
   ownerImage: {
@@ -307,8 +318,8 @@ const styles = StyleSheet.create({
   aboutSection: {
     marginTop: 5,
     marginBottom: 10,
-    width:"95%",
-    alignSelf:"center",
+    width: "95%",
+    alignSelf: "center",
   },
   aboutTitle: {
     fontWeight: "600",
@@ -322,7 +333,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   footerBox: {
-    width:"100%",
+    width: "100%",
     position: "absolute",
     bottom: 23,
     flexDirection: "row",
@@ -331,7 +342,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
     marginHorizontal: 20,
     paddingVertical: 10,
-    paddingHorizontal: 10, 
+    paddingHorizontal: 10,
     borderRadius: 50,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
@@ -342,7 +353,7 @@ const styles = StyleSheet.create({
     color: "gray",
     fontSize: 12,
     fontWeight: "300",
-    paddingLeft:25,
+    paddingLeft: 25,
   },
   priceValue: {
     color: "white",
