@@ -185,12 +185,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   exploreText: {
-    fontSize: 6,
+    fontSize: 8,
     backgroundColor: "#2bbfff",
     borderRadius: 10,
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    color: "#444",
+    paddingVertical: 6,
+    color: "#ffffff",
+    fontWeight: "600",
     position: "absolute",
     right: 18, // wherever you want
     top: 30, // wherever you want

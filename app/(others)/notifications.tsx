@@ -7,6 +7,7 @@ import {
   StatusBar,
   ScrollView,
   Pressable,
+  Platform,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -189,7 +190,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    marginTop: 20,
+    marginTop: Platform.OS === "ios" ? 50 : 20,
     marginBottom: 20,
   },
   navText: {
