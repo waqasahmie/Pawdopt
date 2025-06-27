@@ -23,236 +23,53 @@ import { s, vs, ms } from "react-native-size-matters";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import { StarIcon } from "@hugeicons/core-free-icons";
 import LottieView from "lottie-react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  where,
+} from "firebase/firestore";
+import { db } from "@/config/firebaseConfig";
+import dayjs from "dayjs";
+import responsive from "@/constants/Responsive";
 
-const reviews = [
-  {
-    id: "1",
-    name: "John Doe",
-    avatar: "https://i.pravatar.cc/100?img=1",
-    rating: 5,
-    comment: "Dr. Sarah was amazing and very helpful!",
-    date: "Apr 14, 2025",
-  },
-  {
-    id: "2",
-    name: "Ayesha Ali",
-    avatar: "https://i.pravatar.cc/100?img=2",
-    rating: 4,
-    comment: "Good service. My cat is healthy again!",
-    date: "Apr 12, 2025",
-  },
-  {
-    id: "3",
-    name: "Ali Raza",
-    avatar: "https://i.pravatar.cc/100?img=3",
-    rating: 3,
-    comment: "Waiting time was a bit too long, but staff was courteous.",
-    date: "Apr 11, 2025",
-  },
-  {
-    id: "4",
-    name: "Mehwish Tariq",
-    avatar: "https://i.pravatar.cc/100?img=4",
-    rating: 5,
-    comment: "Very professional and caring. Highly recommended!",
-    date: "Apr 10, 2025",
-  },
-  {
-    id: "5",
-    name: "Hamza Sheikh",
-    avatar: "https://i.pravatar.cc/100?img=5",
-    rating: 4,
-    comment: "Nice experience, the vet was very friendly.",
-    date: "Apr 09, 2025",
-  },
-  {
-    id: "6",
-    name: "Nida Akram",
-    avatar: "https://i.pravatar.cc/100?img=6",
-    rating: 2,
-    comment: "Clinic was overcrowded and noisy.",
-    date: "Apr 08, 2025",
-  },
-  {
-    id: "7",
-    name: "Zain Khan",
-    avatar: "https://i.pravatar.cc/100?img=7",
-    rating: 3,
-    comment: "It was okay, could be more organized.",
-    date: "Apr 07, 2025",
-  },
-  {
-    id: "8",
-    name: "Fatima Noor",
-    avatar: "https://i.pravatar.cc/100?img=8",
-    rating: 5,
-    comment: "My dog loves coming here!",
-    date: "Apr 06, 2025",
-  },
-  {
-    id: "9",
-    name: "Kashif Ahmed",
-    avatar: "https://i.pravatar.cc/100?img=9",
-    rating: 4,
-    comment: "Clean environment and friendly team.",
-    date: "Apr 05, 2025",
-  },
-  {
-    id: "10",
-    name: "Sana Javed",
-    avatar: "https://i.pravatar.cc/100?img=10",
-    rating: 3,
-    comment: "Average service, nothing exceptional.",
-    date: "Apr 04, 2025",
-  },
-  {
-    id: "11",
-    name: "Imran Butt",
-    avatar: "https://i.pravatar.cc/100?img=11",
-    rating: 1,
-    comment: "Extremely dissatisfied. Will not come back.",
-    date: "Apr 03, 2025",
-  },
-  {
-    id: "12",
-    name: "Rabia Hussain",
-    avatar: "https://i.pravatar.cc/100?img=12",
-    rating: 4,
-    comment: "Very cooperative staff and timely care.",
-    date: "Apr 02, 2025",
-  },
-  {
-    id: "13",
-    name: "Ahmed Tariq",
-    avatar: "https://i.pravatar.cc/100?img=13",
-    rating: 5,
-    comment: "Outstanding experience. Loved the professionalism!",
-    date: "Apr 01, 2025",
-  },
-  {
-    id: "14",
-    name: "Zoya Malik",
-    avatar: "https://i.pravatar.cc/100?img=14",
-    rating: 4,
-    comment: "Easy to get appointments. Friendly environment.",
-    date: "Mar 31, 2025",
-  },
-  {
-    id: "15",
-    name: "Taha Siddiqui",
-    avatar: "https://i.pravatar.cc/100?img=15",
-    rating: 2,
-    comment: "The staff wasn't very attentive.",
-    date: "Mar 30, 2025",
-  },
-  {
-    id: "16",
-    name: "Hira Naveed",
-    avatar: "https://i.pravatar.cc/100?img=16",
-    rating: 3,
-    comment: "Good but I expected better follow-up.",
-    date: "Mar 29, 2025",
-  },
-  {
-    id: "17",
-    name: "Rameez Raja",
-    avatar: "https://i.pravatar.cc/100?img=17",
-    rating: 5,
-    comment: "The best clinic for pets. They truly care!",
-    date: "Mar 28, 2025",
-  },
-  {
-    id: "18",
-    name: "Mariam Shah",
-    avatar: "https://i.pravatar.cc/100?img=18",
-    rating: 3,
-    comment: "I had to wait a lot despite having an appointment.",
-    date: "Mar 27, 2025",
-  },
-  {
-    id: "19",
-    name: "Omar Zubair",
-    avatar: "https://i.pravatar.cc/100?img=19",
-    rating: 4,
-    comment: "Helpful doctor, but the clinic was a bit hard to find.",
-    date: "Mar 26, 2025",
-  },
-  {
-    id: "20",
-    name: "Sadia Qureshi",
-    avatar: "https://i.pravatar.cc/100?img=20",
-    rating: 2,
-    comment: "Wasn't satisfied with the treatment approach.",
-    date: "Mar 25, 2025",
-  },
-  {
-    id: "21",
-    name: "Hassan Mir",
-    avatar: "https://i.pravatar.cc/100?img=21",
-    rating: 5,
-    comment: "Awesome experience. Will come back for sure!",
-    date: "Mar 24, 2025",
-  },
-  {
-    id: "22",
-    name: "Laiba Rafiq",
-    avatar: "https://i.pravatar.cc/100?img=22",
-    rating: 4,
-    comment: "They treated my rabbit with great care. Thanks!",
-    date: "Mar 23, 2025",
-  },
-];
+interface Pet {
+  id: string;
+  name: string;
+  age: string;
+  breed: string[];
+  category: string;
+  createdAt: string;
+  description: string;
+  eyeColor: string;
+  size: { width: 16; height: 16 };
+  gender: string;
+  image: string[];
+  ownerId: string;
+  price: number;
+  weight: string;
+}
 
-const contactDetails = [
-  {
-    id: 1,
-    icon: require("../../assets/images/Black-Location.png"),
-    text: "74/6 Wellington St, East Melbourne",
-    iconStyle: { width: 13, height: 15, marginTop: ms(12) },
-  },
-  {
-    id: 2,
-    icon: require("../../assets/images/phone.png"),
-    text: "+92 314 7544535",
-    iconStyle: { width: 13, height: 13, marginTop: ms(12) },
-  },
-  {
-    id: 3,
-    icon: require("../../assets/images/Mail.png"),
-    text: "waqasahmie@gmail.com",
-    iconStyle: { width: 14, height: 10, marginTop: ms(12) },
-  },
-];
-
-const pets = [
-  {
-    id: 1,
-    breed: "Maine Coon",
-    name: "Smokey",
-    gender: require("../../assets/images/male.png"),
-    size: { width: 16, height: 16 },
-    distance: "1.7km Away",
-    image: require("../../assets/images/mainecoon.jpg"),
-  },
-  {
-    id: 2,
-    breed: "Golden Ret.",
-    name: "Lucy",
-    gender: require("../../assets/images/female.png"),
-    size: { width: 14, height: 16 },
-    distance: "1.3km Away",
-    image: require("../../assets/images/goldenretriever.jpg"),
-  },
-  {
-    id: 3,
-    breed: "Cockatoo",
-    name: "Smiley",
-    gender: require("../../assets/images/male.png"),
-    size: { width: 16, height: 16 },
-    distance: "3.0km Away",
-    image: require("../../assets/images/cockatoo.jpg"),
-  },
-];
+interface Review {
+  id: string;
+  userId: string;
+  rating: number;
+  comment: string;
+  createdAt: Date;
+  user?: { firstName: string; lastName: string; profilePicUrl: string };
+}
+interface DisplayReview {
+  id: string;
+  name: string;
+  avatar: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
 
 const policies = [
   {
@@ -295,17 +112,13 @@ const policies = [
 const LottieLoader = () => {
   return (
     <LottieView
-      source={require("../../components/utils/animation/reviews_refresh.json")} // Replace with your Lottie animation file path
+      source={require("../../components/utils/animation/reviews_refresh.json")}
       autoPlay
       loop
       style={styles.lottieLoader}
     />
   );
 };
-
-const averageRating = (
-  reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-).toFixed(1);
 
 const StarRating = ({ rating }: { rating: number }) => {
   const fullStars = Math.floor(rating);
@@ -334,22 +147,149 @@ const StarRating = ({ rating }: { rating: number }) => {
     </View>
   );
 };
+const ReviewCard = ({ review }: { review: DisplayReview }) => {
 
-const ReviewCard = ({ review }: { review: (typeof reviews)[0] }) => (
-  <View style={styles.card}>
-    <View style={styles.header}>
-      <Image source={{ uri: review.avatar }} style={styles.avatarreview} />
-      <View style={{ flex: 1 }}>
-        <Text style={styles.name}>{review.name}</Text>
-        <StarRating rating={review.rating} />
+  return (
+    <View style={styles.card}>
+      <View style={styles.header}>
+        <Image
+          source={
+            review.avatar && review.avatar.trim() !== ""
+              ? { uri: review.avatar }
+              : require("../../assets/images/avatar.png")
+          }
+          style={styles.avatarreview}
+        />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.name}>{review.name}</Text>
+          <StarRating rating={review.rating} />
+        </View>
+        <Text style={styles.date}>{review.date}</Text>
       </View>
-      <Text style={styles.date}>{review.date}</Text>
+      <Text style={styles.comment}>{review.comment}</Text>
     </View>
-    <Text style={styles.comment}>{review.comment}</Text>
-  </View>
-);
+  );
+};
 
 export default function Owner_Organization() {
+  const { ownerId } = useLocalSearchParams<{ ownerId: string }>();
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [userDetails, setUserDetails] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [liveReviews, setLiveReviews] = useState<Review[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const totalReviews = liveReviews.length;
+  const averageRating =
+    totalReviews > 0
+      ? (
+          liveReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+        ).toFixed(1)
+      : "0.0";
+  useEffect(() => {
+    const fetchPetsByOwner = async () => {
+      if (!ownerId) return;
+
+      try {
+        const q = query(
+          collection(db, "petlistings"),
+          where("ownerId", "==", ownerId)
+        );
+        const querySnapshot = await getDocs(q);
+        const petsData: Pet[] = [];
+
+        querySnapshot.forEach((doc) => {
+          petsData.push({ id: doc.id, ...doc.data() } as Pet);
+        });
+
+        setPets(petsData);
+
+        const userDocRef = doc(db, "users", ownerId);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          setUserDetails(userDoc.data());
+        } 
+      } catch (error) {
+        console.error("Error fetching owner's pets:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPetsByOwner();
+  }, [ownerId]);
+
+  useEffect(() => {
+    const fetchReviewsWithUser = async () => {
+      if (!ownerId) return;
+      setLoadingReviews(true);
+
+      const ratingsRef = collection(db, "reviews", ownerId, "ratings");
+      const q = query(ratingsRef, orderBy("createdAt", "desc"));
+      const snap = await getDocs(q);
+
+      const raw: Review[] = snap.docs.map((d) => ({
+        id: d.id,
+        userId: d.data().userId,
+        rating: d.data().rating,
+        comment: d.data().comment,
+        createdAt: d.data().createdAt.toDate(),
+      }));
+
+      const uniqueUserIds = Array.from(new Set(raw.map((r) => r.userId)));
+      const userFetches = uniqueUserIds.map((uid) =>
+        getDoc(doc(db, "users", uid))
+      );
+      const userSnaps = await Promise.all(userFetches);
+
+      const userMap: Record<
+        string,
+        { firstName: string; lastName: string; profilePicUrl: string }
+      > = {};
+      userSnaps.forEach((usnap) => {
+        if (usnap.exists()) {
+          const data = usnap.data();
+          userMap[usnap.id] = {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            profilePicUrl: data.profilePicUrl,
+          };
+        }
+      });
+
+      const enriched = raw.map((r) => ({
+        ...r,
+        user: userMap[r.userId],
+      }));
+
+      setLiveReviews(enriched);
+      setLoadingReviews(false);
+    };
+
+    fetchReviewsWithUser();
+  }, [ownerId]);
+
+  const contactDetails = [
+    {
+      id: 1,
+      icon: require("../../assets/images/Black-Location.png"),
+      text: userDetails?.address || "no phone available",
+      iconStyle: { width: 13, height: 15, marginTop: 12 },
+    },
+    {
+      id: 2,
+      icon: require("../../assets/images/phone.png"),
+      text: userDetails?.phone || "no phone available",
+      iconStyle: { width: 13, height: 13, marginTop: ms(12) },
+    },
+    {
+      id: 3,
+      icon: require("../../assets/images/Mail.png"),
+      text: userDetails?.email || "No email available",
+      iconStyle: { width: 14, height: 10, marginTop: ms(12) },
+    },
+  ];
+
   const navigation = useNavigation();
   const [showPolicy, setShowPolicy] = useState(false);
   const [activeTab, setActiveTab] = useState("Listings");
@@ -363,42 +303,73 @@ export default function Owner_Organization() {
     }).start();
   }, [activeTab]);
 
-  const [currentReviews, setCurrentReviews] = useState(reviews.slice(0, 6)); // Load first 3 reviews
-  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    setCurrentReviews(liveReviews.slice(0, 6));
+    setPage(1);
+  }, [liveReviews]);
+
+  const [currentReviews, setCurrentReviews] = useState<Review[]>([]);
+
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
 
   const loadMoreReviews = () => {
-    if (loading || currentReviews.length === reviews.length) return; // Prevent loading if all reviews are loaded
+    if (loading || currentReviews.length >= liveReviews.length) return;
 
     setLoading(true);
     setTimeout(() => {
-      const newReviews = reviews.slice(page * 6, (page + 1) * 6);
-      setCurrentReviews((prevReviews) => [...prevReviews, ...newReviews]);
+      const newSlice = liveReviews.slice(page * 6, (page + 1) * 6);
+      setCurrentReviews((prev) => [...prev, ...newSlice]);
       setPage((prevPage) => prevPage + 1);
       setLoading(false);
-    }, 900); // Simulate network delay
+    }, 900);
   };
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setTimeout(() => {
-      // Add the newest reviews to the top of the list
-      const newReviews = reviews.slice(0, 6);
-      setCurrentReviews(newReviews);
+      setCurrentReviews(liveReviews.slice(0, 6));
       setPage(1);
       setRefreshing(false);
-    }, 1500); // Simulate refresh delay
-  }, []);
+    }, 1500);
+  }, [liveReviews]);
 
   const renderFooter = () => {
     if (loading) {
       return <ActivityIndicator size="small" color="#2BBFFF" />;
-    } else if (currentReviews.length === reviews.length) {
+    } else if (currentReviews.length === liveReviews.length) {
       return <Text style={styles.noMoreReviews}>No More Reviews</Text>;
     }
     return null;
   };
+
+  const renderPetItem = ({ item }:{item:any}) => (
+    <TouchableOpacity onPress={() => router.push(`/petDetail?petId=${item.id}`)}>
+      <View style={styles.petCard}>
+        <Image source={{ uri: item.image[0] }} style={styles.petImage} />
+        <View style={styles.petInfo}>
+          <Text style={styles.breedText}>{item.breed}</Text>
+          <View style={styles.nameInfo}>
+            <Text style={styles.nameText}>{item.name}</Text>
+            <Image
+              source={
+                item.gender.toLowerCase() === 'male'
+                  ? require('../../assets/images/male.png')
+                  : require('../../assets/images/female.png')
+              }
+              style={[
+                styles.genderImage,
+                item.gender.toLowerCase() === 'male'
+                  ? { width: 16, height: 16 }
+                  : { width: 14, height: 16 },
+              ]}
+            />
+          </View>
+          <Text style={styles.distanceText}>1.5 km away</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
@@ -409,22 +380,34 @@ export default function Owner_Organization() {
             onPress={() => navigation.goBack()}
             style={{ zIndex: 10 }}
           >
-            <MaterialIcons
-              name="arrow-back-ios-new"
-              size={ms(15)}
-              color="black"
-            />
+            <MaterialIcons name="arrow-back-ios-new" size={15} color="black" />
           </TouchableOpacity>
-          <Text style={styles.navText}>Owner/Organization</Text>
+          <Text style={styles.navText}>
+            {userDetails
+              ? userDetails.organizationName
+                ? "Organization"
+                : "Owner"
+              : ""}
+          </Text>
         </View>
 
         <View style={styles.profileCard}>
           <Image
-            source={require("../../assets/images/avatar.png")}
+            source={
+              userDetails?.profilePicUrl
+                ? { uri: userDetails.profilePicUrl }
+                : require("../../assets/images/avatar.png")
+            }
             style={styles.avatar}
           />
           <View>
-            <Text style={styles.profileTitle}>The Crazy Pets</Text>
+            {userDetails && (
+              <Text style={styles.profileTitle}>
+                {userDetails.organizationName
+                  ? userDetails.organizationName
+                  : `${userDetails.firstName} ${userDetails.lastName}`}
+              </Text>
+            )}
             {contactDetails.map((item) => (
               <View
                 key={item.id}
@@ -446,7 +429,7 @@ export default function Owner_Organization() {
           <Text style={styles.dropdownText}>Adoption Policy</Text>
           <Ionicons
             name={showPolicy ? "chevron-up" : "chevron-down"}
-            size={ms(19)}
+            size={19}
             color="black"
           />
         </Pressable>
@@ -459,7 +442,6 @@ export default function Owner_Organization() {
         >
           <View>
             <ScrollView
-              // nestedScrollEnabled={true}
               style={styles.policyScroll}
               showsVerticalScrollIndicator={false}
             >
@@ -514,32 +496,21 @@ export default function Owner_Organization() {
         </View>
 
         {activeTab === "Listings" && (
-          <View style={styles.scrollContainer}>
-            <ScrollView
-              contentContainerStyle={{ flexGrow: 1 }}
-              showsVerticalScrollIndicator={false}
-            >
-              <View>
-                {pets.map((pet) => (
-                  <View key={pet.id} style={styles.petCard}>
-                    <Image source={pet.image} style={styles.petImage} />
-                    <View style={styles.petInfo}>
-                      <Text style={styles.breedText}>{pet.breed}</Text>
-                      <View style={styles.nameInfo}>
-                        <Text style={styles.nameText}>{pet.name}</Text>
-                        <Image
-                          source={pet.gender}
-                          style={[styles.genderImage, pet.size]}
-                        />
-                      </View>
-                      <Text style={styles.distanceText}>{pet.distance}</Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-              <Text style={styles.note}> Looks like you reached the end!</Text>
-            </ScrollView>
-          </View>
+          <FlatList
+          data={pets}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderPetItem}
+         
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListFooterComponent={
+            pets.length > 0 ? (
+              <Text style={styles.note}>Looks like you reached the end!</Text>
+            ) : null
+          }
+        />
         )}
 
         {activeTab === "Reviews" && (
@@ -547,29 +518,38 @@ export default function Owner_Organization() {
             <View style={styles.statsRow}>
               <Text style={styles.avgRating}>{averageRating}</Text>
               <StarRating rating={Math.round(Number(averageRating))} />
-              <Text style={styles.totalReviews}>
-                ({reviews.length} reviews)
-              </Text>
+              <Text style={styles.totalReviews}>({totalReviews} reviews)</Text>
             </View>
 
             <FlatList
-              data={currentReviews}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => <ReviewCard review={item} />}
+              data={liveReviews}
+              keyExtractor={(r) => r.id}
+              renderItem={({ item }) => {
+                return (
+                  <ReviewCard
+                    review={{
+                      id: item.id,
+                      name: `${item.user?.firstName} ${item.user?.lastName}`,
+                      avatar: item.user?.profilePicUrl ?? "",
+                      rating: item.rating,
+                      comment: item.comment,
+                      date: dayjs(item.createdAt).format("MMM D, YYYY"),
+                    }}
+                  />
+                );
+              }}
+             
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 24 }}
-              onEndReached={loadMoreReviews} // Trigger loadMoreReviews when scrolled to the bottom
-              onEndReachedThreshold={0.5} // 50% of the list before it triggers the function
-              // refreshing={refreshing}
-              // onRefresh={onRefresh}
+              onEndReached={loadMoreReviews}
+              onEndReachedThreshold={0.5}
               ListHeaderComponent={refreshing ? <LottieLoader /> : null}
-              ListFooterComponent={renderFooter} // Custom footer to show "No More Reviews"
+              ListFooterComponent={renderFooter}
               refreshControl={
                 <RefreshControl
                   refreshing={refreshing}
                   onRefresh={onRefresh}
-                  tintColor="transparent" // hides native spinner (iOS)
-                  colors={["transparent"]} // hides native spinner (Android)
+                  tintColor="transparent"
+                  colors={["transparent"]}
                   progressBackgroundColor="transparent"
                 />
               }
@@ -589,17 +569,18 @@ const styles = StyleSheet.create({
   innerContainer: {
     flex: 1,
     justifyContent: "flex-start",
-    paddingHorizontal: s(20),
+    paddingHorizontal: 20,
   },
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    marginTop: ms(20),
-    marginBottom: ms(40),
+    marginTop: Platform.OS === "ios" ? 70 : 20,
+    marginBottom: 40,
   },
   navText: {
-    fontSize: Platform.OS === "ios" ? ms(23) : ms(20),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     fontWeight: "500",
     color: "#000",
     position: "absolute",
@@ -607,35 +588,33 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
   },
-  scrollContainer: {
-    width: "100%",
-    marginBottom: Platform.OS === "ios" ? "110%" : "120%",
-  },
   profileCard: {
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
-    paddingVertical: vs(15),
-    paddingHorizontal: s(8),
+    paddingVertical: 15,
+    paddingHorizontal: 8,
     borderWidth: 1,
     borderRadius: 15,
     borderColor: "#f0f0f0",
-    marginBottom: ms(30),
+    marginBottom: 30,
   },
   avatar: {
-    width: ms(75),
-    height: ms(75),
+    width: 75,
+    height: 75,
     borderRadius: 50,
-    marginRight: ms(15),
+    marginRight: 15,
   },
   profileTitle: {
-    fontSize: Platform.OS === "ios" ? ms(21) : ms(18),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     fontWeight: "500",
-    marginTop: ms(5),
+    marginTop: 5,
   },
   profileSubtitle: {
     width: "80%",
-    marginTop: ms(10),
-    fontSize: Platform.OS === "ios" ? ms(11) : ms(8),
+    marginTop: 10,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(8),
     fontWeight: "400",
     color: "#939393",
   },
@@ -643,21 +622,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: ms(16),
+    padding: 16,
     borderRadius: 15,
     borderWidth: 1,
     borderColor: "#f0f0f0",
   },
   dropdownText: {
-    fontSize: Platform.OS === "ios" ? ms(15) : ms(12),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(12),
   },
   policyScroll: {
-    maxHeight: vs(250),
+    maxHeight: 250,
   },
   policyContainerOpen: {
-    marginTop: ms(5),
-    paddingHorizontal: s(16),
-    paddingVertical: vs(5),
+    marginTop: 5,
+    paddingHorizontal: 16,
+    paddingVertical: 5,
     borderRadius: 15,
     borderWidth: 1,
     borderColor: "#f0f0f0",
@@ -666,76 +646,80 @@ const styles = StyleSheet.create({
     display: "none",
   },
   policyHeader: {
-    fontSize: Platform.OS === "ios" ? ms(17) : ms(14),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     fontWeight: "500",
-    marginTop: ms(15),
-    marginBottom: ms(5),
+    marginTop: 15,
+    marginBottom: 5,
   },
   policyText: {
-    fontSize: Platform.OS === "ios" ? ms(15) : ms(12),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(12),
     fontWeight: "300",
-    marginBottom: ms(15),
+    marginBottom: 5,
   },
   tabsWrapper: {
-    marginVertical: vs(24),
-    marginHorizontal: s(8),
+    marginVertical: 24,
+    marginHorizontal: 8,
   },
   tabsContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
-    marginBottom: ms(10),
+    marginBottom: 10,
   },
   tabBarBackground: {
     position: "relative",
-    height: vs(4),
+    height: 4,
     backgroundColor: "#dcdcdc",
     borderRadius: 5,
-    marginTop: ms(8),
+    marginTop: 8,
     overflow: "hidden",
   },
   tabBar: {
-    height: vs(4),
+    height: 4,
     width: "50%",
     borderRadius: 5,
     backgroundColor: "#2bbfff",
   },
   activeTab: {
-    fontSize: Platform.OS === "ios" ? ms(17) : ms(14),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     color: "#2bbfff",
-    marginRight: ms(20),
+    marginRight: 20,
   },
   inactiveTab: {
-    fontSize: Platform.OS === "ios" ? ms(17) : ms(14),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     color: "#dcdcdc",
-    marginRight: ms(20),
+    marginRight: 20,
   },
   petCard: {
     flexDirection: "row",
-    marginBottom: ms(25),
-    marginTop: ms(2),
-    padding: ms(6),
+    marginBottom: 25,
+    marginTop: 2,
+    padding: 6,
     borderRadius: 20,
     backgroundColor: "#fff",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: vs(4) },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   petImage: {
-    width: ms(145),
-    height: ms(170),
-    // width: 150,
-    // height: 170,
+    width: 145,
+    height: 170,
     borderRadius: 14,
   },
   petInfo: {
-    paddingHorizontal: s(15),
-    paddingVertical: vs(10),
+    paddingHorizontal: 15,
+    paddingVertical: 10,
     flex: 1,
   },
   breedText: {
-    fontSize: Platform.OS === "ios" ? ms(21) : ms(18),
+    fontFamily: "JUST Sans Outline ExBold",
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     fontWeight: "600",
     color: "#D4D4D4",
   },
@@ -744,31 +728,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   nameText: {
-    fontSize: Platform.OS === "ios" ? ms(17) : ms(14),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     color: "#ACACAC",
-    marginTop: ms(5),
+    marginTop: 5,
   },
   genderImage: {
-    marginTop: ms(8),
-    marginLeft: ms(10),
+    marginTop: 8,
+    marginLeft: 10,
   },
   distanceText: {
-    fontSize: Platform.OS === "ios" ? ms(11) : ms(8),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(8),
     color: "#ACACAC",
     position: "absolute",
     bottom: 1,
     right: 10,
   },
   note: {
-    fontSize: Platform.OS === "ios" ? ms(11) : ms(8),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(8),
     fontWeight: "400",
     alignSelf: "center",
     color: "#ACACAC",
-    marginBottom: ms(25),
+    marginBottom: 25,
   },
   reviewContainer: {
-   // marginHorizontal: s(20),
-    marginBottom: ms(470),
+    marginBottom: 470,
   },
   statsRow: {
     flexDirection: "row",
@@ -777,12 +763,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   avgRating: {
-    fontSize: 20,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(19) : responsive.fontSize(16),
     fontWeight: "600",
     color: "#2BBFFF",
   },
   totalReviews: {
-    fontSize: 14,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     color: "#666",
   },
   lottieLoader: {
@@ -816,26 +804,30 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   name: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
     color: "#333",
   },
   date: {
-    fontSize: 12,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(9),
     color: "#999",
   },
   comment: {
-    fontSize: 14,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     color: "#444",
     lineHeight: 20,
     marginTop: 4,
   },
   noMoreReviews: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "500",
     color: "#999",
     textAlign: "center",
-    paddingVertical: 16,
-    //marginBottom: 40,
+    paddingTop: 16,
+    paddingBottom: 30,
   },
 });

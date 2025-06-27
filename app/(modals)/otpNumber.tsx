@@ -1,10 +1,9 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
   StyleSheet,
   StatusBar,
   Keyboard,
@@ -15,13 +14,95 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
-
+import { useSignUp, useSignIn } from "@clerk/clerk-expo";
+import responsive from "@/constants/Responsive";
+import Toast from "@/components/utils/toast";
 export default function OTPVerification() {
   const navigation = useNavigation();
   const { from } = useLocalSearchParams();
-  const [otp, setOtp] = useState(["", "", "", ""]);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const inputRefs = useRef<Array<TextInput | null>>([]);
+  const { signUp, isLoaded } = useSignUp();
+  const params = useLocalSearchParams();
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn } = useSignIn();
+  const [error, setError] = useState("");
+  const { phone, signUpId } = useLocalSearchParams();
+  const rawPhone = useLocalSearchParams().phone;
+  const phonee = Array.isArray(rawPhone) ? rawPhone[0] : rawPhone;
+  const toastRef = useRef<any>({});
 
+  const maskPhoneNumber = (phone: string) => {
+    const match = phone.match(/^(\+\d{1,3})(\d{0,})(\d{3})$/);
+    if (!match) return phone;
+
+    const [, countryCode, middle, lastThree] = match;
+    const maskedMiddle = "*".repeat(middle.length);
+    return `${countryCode}${maskedMiddle}${lastThree}`;
+  };
+
+  useEffect(() => {
+    if (isLoaded && signUp && signUp.id !== signUpId) {
+      signUp.reload();
+    }
+  }, [isLoaded, signUpId]);
+
+  const verifyCode = async () => {
+    const fullCode = otp.join("");
+    if (fullCode.length !== 6) return;
+
+    setIsLoading(true);
+    setError("");
+    try {
+      if (from === "forgotPasswordNumber") {
+        if (!signIn) return;
+
+        const result = await signIn.attemptFirstFactor({
+          strategy: "reset_password_phone_code",
+          code: fullCode,
+        });
+
+        if (result.status === "complete") {
+          // Navigate to password reset screen
+          router.replace({
+            pathname: "/(forgotPassword)/newPassword",
+            params: { phone },
+          });
+        } else if (result.status === "needs_new_password") {
+          router.replace({
+            pathname: "/(forgotPassword)/newPassword",
+            params: {
+              signInId: signIn.id,
+            },
+          });
+        }
+      } else if (from === "signupPhone") {
+        if (!signUp) return;
+
+        const result = await signUp.attemptPhoneNumberVerification({
+          code: fullCode,
+        });
+
+        if (
+          result.status === "complete" ||
+          result.status === "missing_requirements"
+        ) {
+          router.replace({
+            pathname: "/(forgotPassword)/createPassword",
+            params: { signUpId: signUp.id },
+          });
+        }
+      }
+    } catch (err) {
+      toastRef.current.show({
+        type: "error",
+        title: "Invalid Code",
+        description: "The OTP entered is incorrect",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   // Handle OTP input changes
   const handleInputChange = (text: string, index: number) => {
     if (text.length === 1 && index < otp.length - 1) {
@@ -47,6 +128,18 @@ export default function OTPVerification() {
   // Handle keyboard dismiss on tap
   const dismissKeyboard = () => {
     Keyboard.dismiss();
+  };
+
+  const handleResendCode = async () => {
+    try {
+      await signUp?.preparePhoneNumberVerification();
+    } catch (err) {
+      toastRef.current.show({
+        type: "error",
+        title: "Failed to resend code",
+        description: "Please try again in a few seconds.",
+      });
+    }
   };
 
   return (
@@ -80,8 +173,8 @@ export default function OTPVerification() {
           <View style={styles.textContainer}>
             <Text style={styles.title}>Enter authentication code</Text>
             <Text style={styles.subtitle}>
-              Enter the 4-digit that we have sent via the phone number +92
-              314-7544535
+              Enter the 6-digit that we have sent to the phone number{" "}
+              {maskPhoneNumber(phonee)}
             </Text>
           </View>
 
@@ -111,15 +204,12 @@ export default function OTPVerification() {
             <TouchableOpacity
               style={[
                 styles.continueButton,
-                otp.join("").length < 4 && styles.disabledButton,
+                (otp.join("").length !== 6 || isLoading) &&
+                  styles.disabledButton,
               ]}
-              disabled={otp.join("").length < 4}
+              disabled={otp.join("").length !== 6}
               onPress={() => {
-                if (from === "forgotPasswordNumber") {
-                  router.replace("/(forgotPassword)/newPassword");
-                } else if (from === "signupPhone") {
-                  router.replace("/(forgotPassword)/createPassword");
-                }
+                verifyCode();
               }}
             >
               <Text style={styles.continueText}>Continue</Text>
@@ -130,6 +220,7 @@ export default function OTPVerification() {
           </View>
         </View>
       </TouchableWithoutFeedback>
+      <Toast ref={toastRef} />
     </KeyboardAvoidingView>
   );
 }
@@ -148,12 +239,13 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between", // Back button left & email right
+    justifyContent: "space-between", 
     width: "100%",
     marginTop: Platform.OS === "ios" ? 50 : 20,
   },
   navText: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "500",
     color: "#2BBFFF",
   },
@@ -162,14 +254,16 @@ const styles = StyleSheet.create({
   },
   title: {
     textAlign: "center",
-    fontSize: 30,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(29) : responsive.fontSize(23),
     fontWeight: "600",
     color: "#000",
     marginTop: 40,
     marginBottom: 10,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     color: "#000",
     marginBottom: 30,
     marginTop: 10,
@@ -177,7 +271,8 @@ const styles = StyleSheet.create({
   },
   otpContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
+    gap: 6,
     width: "80%",
     marginBottom: 30,
   },
@@ -187,7 +282,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#d3d3d3",
     textAlign: "center",
-    fontSize: 22,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     borderRadius: 10,
   },
   emptyOtpInput: {
@@ -201,7 +297,7 @@ const styles = StyleSheet.create({
   bottomContainer: {
     position: "absolute",
     width: "100%",
-    bottom: 40,
+    bottom: 50,
   },
   continueButton: {
     backgroundColor: "#2BBFFF",
@@ -220,7 +316,8 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
   },
   resendContainer: {
@@ -232,7 +329,8 @@ const styles = StyleSheet.create({
   resendText: {
     marginTop: 10,
     color: "#2BBFFF",
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
   },
 });

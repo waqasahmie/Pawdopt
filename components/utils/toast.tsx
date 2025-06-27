@@ -13,7 +13,6 @@ import Animated, {
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
-// import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import LottiesView from './lottiesView';
 import {getStyles} from '../utils/toastStyles';
 
@@ -40,7 +39,6 @@ const Toast = forwardRef(({}, ref) => {
     }));
   };
 
-  // const insets = useSafeAreaInsets();
   const {backgroundColor, titleColor, descriptionColor, animationSource} =
     getStyles(state.type);
 
@@ -121,7 +119,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     paddingVertical: 8,
-    paddingHorizontal: 10, //25
+    paddingHorizontal: 10, 
     marginHorizontal: 15,
     borderRadius: 50,
     flexDirection: 'row',

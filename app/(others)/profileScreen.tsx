@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -11,8 +11,8 @@ import {
   TextInput,
   Keyboard,
   Alert,
-  SafeAreaView,
   Modal,
+  Platform,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -25,25 +25,34 @@ import * as ImagePicker from "expo-image-picker";
 import { useDerivedValue, useSharedValue } from "react-native-reanimated";
 import { Clock } from "@/components/utils/clock";
 import { TimeRange } from "@/components/utils/time-range";
+import { useAppContext } from "@/hooks/AppContext";
+import parsePhoneNumberFromString from "libphonenumber-js";
+import { db } from "../../config/firebaseConfig"; // adjust the path if needed
+import { doc, updateDoc, getDoc, Timestamp } from "firebase/firestore";
+import { useAuth } from "@clerk/clerk-expo";
+import { uploadImage } from "../../config/uploadImage";
+import responsive from "@/constants/Responsive";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "@/components/utils/toast";
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const dismissKeyboard = () => Keyboard.dismiss();
-
-
+  const { userId } = useAuth();
   const TimezoneOffsetMs = -new Date().getTimezoneOffset() * 60000;
+  
 
   const timeSlots = new Array(48).fill(0).map((_, index) => {
     const hour = Math.floor(index / 2) + 24; // 8:00 AM onward
     const minutes = index % 2 === 0 ? 0 : 30;
     return new Date(2025, 0, 1, hour, minutes);
   });
-
+  const toastRef = useRef<any>({});
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [endTime, setEndTime] = useState<Date | null>(null);
   const [isStartTime, setIsStartTime] = useState(true);
   const [showTimePicker, setShowTimePicker] = useState(false);
-
+  const { vetData, updateVetData } = useAppContext();
   // shared time state
   const selectedDate = useSharedValue(timeSlots[0].getTime());
 
@@ -52,27 +61,162 @@ export default function ProfileScreen() {
     return selectedDate.value + TimezoneOffsetMs;
   });
 
-  const formatTime = (date: Date) => {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? "PM" : "AM";
-    const hour12 = hours % 12 || 12;
-    const padded = (n: number) => (n < 10 ? `0${n}` : n);
-    return `${hour12}:${padded(minutes)} ${ampm}`;
+  const updateUserProfile = async (params: {
+    userId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    clinicName: string;
+    startTime: Timestamp;
+    endTime: Timestamp;
+    phoneNumber: string;
+    countryCode: string;
+    callingCode: string;
+    gender: string;
+  }): Promise<
+    { success: true; data: any } | { success: false; error: string }
+  > => {
+    try {
+      const {
+        userId,
+        firstName,
+        lastName,
+        email,
+        clinicName,
+        startTime,
+        endTime,
+        phoneNumber,
+        countryCode,
+        callingCode,
+        gender,
+      } = params;
+      updateVetData("firstName", firstName);
+      updateVetData("lastName", lastName);
+      updateVetData("clinicName", clinicName);
+      updateVetData("startTime", startTime);
+      updateVetData("endTime", endTime);
+      updateVetData("email", email);
+      updateVetData(
+        "phoneNumber",
+        `+${callingCode}${phoneNumber.replace(/^0+/, "")}`
+      );
+      updateVetData("gender", gender);
+      updateVetData("callingCode", callingCode);
+      updateVetData("countryCode", countryCode);
+      const userDocRef = doc(db, "users", userId);
+
+      // Update Firestore
+      await updateDoc(userDocRef, {
+        firstName,
+        lastName,
+        email,
+        clinicName,
+        startTime,
+        endTime,
+        phone: `+${callingCode}${phoneNumber}`,
+        countryCode,
+        callingCode,
+        gender,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Get fresh data from Firestore
+      const updatedSnap = await getDoc(userDocRef);
+
+      if (!updatedSnap.exists()) {
+        throw new Error("Document not found after update");
+      }
+
+      const updatedData = updatedSnap.data() as any;
+
+      return { success: true, data: updatedData };
+    } catch (error: any) {
+      const errorMessage = error.message || "Unknown error occurred";
+      return { success: false, error: errorMessage };
+    }
   };
 
+  function formatTime(d: Date | Timestamp | undefined): string {
+    if (!d) return "Select time";
+
+    // Convert Firestore Timestamp to Date if needed
+    const date = d instanceof Timestamp ? d.toDate() : d;
+
+    // Handle invalid dates
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+      return "Invalid time";
+    }
+
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const period = hours >= 12 ? "PM" : "AM";
+    const h12 = hours % 12 || 12;
+    const mm = minutes.toString().padStart(2, "0");
+    return `${h12}:${mm} ${period}`;
+  }
+
+  async function onImagePicked(localUri: string) {
+    if (!userId) return Alert.alert("Error", "No user ID found.");
+
+    try {
+      // generate a unique path
+      const ext = localUri.split(".").pop();
+      const filename = `profilePics/${userId}-${Date.now()}.${ext}`;
+
+      const publicUrl = await uploadImage("user-documents", filename, localUri);
+
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, { profilePicUrl: publicUrl });
+
+      updateVetData("profilePicUrl", publicUrl);
+    } catch (e) {
+      toastRef.current.show({
+        type: "error",
+        title: "Upload Failed",
+        description: "Please try again.",
+      });
+      
+    }
+  }
+
+  const parsePhoneDetails = (phone: string | undefined) => {
+    if (!phone) {
+      return {
+        phoneNumber: "",
+        countryCode: "US",
+        callingCode: "1",
+      };
+    }
+    const phoneNumberObj = parsePhoneNumberFromString(phone);
+    if (phoneNumberObj) {
+      return {
+        phoneNumber: phoneNumberObj.nationalNumber, 
+        countryCode: phoneNumberObj.country, 
+        callingCode: phoneNumberObj.countryCallingCode, 
+      };
+    } else {
+     
+      return {
+        phoneNumber: "",
+        countryCode: "US",
+        callingCode: "1",
+      };
+    }
+  };
+
+  const parsedPhone = parsePhoneDetails(vetData?.phoneNumber);
   const [initialUser, setInitialUser] = useState({
-    firstName: "Waqas",
-    lastName: "Ahmed",
-    clinicName: "Modal Town Pets Clinic",
-    startTime: "10:00 AM",
-    endTime: "10:00 PM",
-    email: "waqasahmed@gmail.com",
-    phoneNumber: "3147544535",
-    gender: "male",
-    cnic: "32304-9995584-3",
-    countryCode: "PK",
-    callingCode: "92",
+    firstName: vetData?.firstName,
+    lastName: vetData?.lastName,
+    email: vetData?.email,
+    clinicName: vetData?.clinicName,
+    startTime: vetData?.startTime?.toDate(),
+    endTime: vetData?.endTime?.toDate(),
+    phoneNumber: parsedPhone.phoneNumber,
+    gender: vetData?.gender,
+    cnic: vetData?.cnic,
+    countryCode: vetData?.countryCode,
+    callingCode: vetData?.callingCode,
   });
 
   const [user, setUser] = useState(initialUser);
@@ -87,13 +231,28 @@ export default function ProfileScreen() {
     { label: "Female", value: "female" },
     { label: "Others", value: "others" },
   ]);
-
+  useEffect(() => {
+    if (vetData.countryCode && vetData.callingCode) {
+      setCountryCode(vetData.countryCode as CountryCode);
+      setCallingCode(vetData.callingCode);
+    }
+  }, []);
 
   // Validation functions
   const validateEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const validatePhoneNumber = (number: string) =>
     /^(?:\d{10,11})$/.test(number);
+  function toTimestamp(input: string | Date | Timestamp): Timestamp {
+    if (input instanceof Timestamp) {
+      return input;
+    } else if (input instanceof Date) {
+      return Timestamp.fromDate(input);
+    } else {
+      const dt = new Date(`1970-01-01T${input}`);
+      return Timestamp.fromDate(dt);
+    }
+  }
 
   const [isUpdated, setIsUpdated] = useState(false);
 
@@ -104,8 +263,10 @@ export default function ProfileScreen() {
     const firstNameChanged = user.firstName !== initialUser.firstName;
     const lastNameChanged = user.lastName !== initialUser.lastName;
     const clinicNameChanged = user.clinicName !== initialUser.clinicName;
-    const startTimeChanged = user.startTime !== initialUser.startTime;
-    const endTimeChanged = user.endTime !== initialUser.endTime;
+    const startTimeChanged =
+      user.startTime?.getTime?.() !== initialUser.startTime?.getTime?.();
+    const endTimeChanged =
+      user.endTime?.getTime?.() !== initialUser.endTime?.getTime?.();
     const emailChanged = user.email !== initialUser.email;
     const phoneChanged = user.phoneNumber !== initialUser.phoneNumber;
     const genderChanged = gender !== initialUser.gender;
@@ -159,7 +320,8 @@ export default function ProfileScreen() {
     });
 
     if (!result.canceled) {
-      setProfileImage(result.assets[0].uri); // Update profile picture
+      setProfileImage(result.assets[0].uri);
+      onImagePicked(result.assets[0].uri); // Update profile picture
     }
   };
 
@@ -173,16 +335,37 @@ export default function ProfileScreen() {
     });
 
     if (!result.canceled) {
-      setProfileImage(result.assets[0].uri); // Update profile picture
+      setProfileImage(result.assets[0].uri);
+      onImagePicked(result.assets[0].uri);
     }
   };
+
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showKeyboard = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideKeyboard = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showKeyboard.remove();
+      hideKeyboard.remove();
+    };
+  }, []);
+
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
         <StatusBar barStyle="dark-content" />
         <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ zIndex: 10 }}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ zIndex: 10 }}
+          >
             <MaterialIcons name="arrow-back-ios-new" size={16} color="black" />
           </TouchableOpacity>
           <Text style={styles.navText}>My Profile</Text>
@@ -191,8 +374,8 @@ export default function ProfileScreen() {
         <View style={styles.profileContainer}>
           <Image
             source={
-              profileImage
-                ? { uri: profileImage }
+              vetData.profilePicUrl
+                ? { uri: vetData.profilePicUrl }
                 : require("../../assets/images/avatar.png")
             }
             style={styles.avatar}
@@ -254,7 +437,7 @@ export default function ProfileScreen() {
                 }}
               />
 
-<View style={styles.textContainer}>
+              <View style={styles.textContainer}>
                 <Text style={styles.inputHeader}>Clinic Timings</Text>
               </View>
 
@@ -264,13 +447,11 @@ export default function ProfileScreen() {
                   onPress={() => {
                     setIsStartTime(true);
                     setShowTimePicker(true);
-                   
                   }}
-                  
                 >
                   <Text style={styles.label}>Start Time</Text>
                   <Text style={styles.timeValue}>
-                  {startTime ? formatTime(startTime) : initialUser.startTime}
+                    {formatTime(user.startTime)}
                   </Text>
                 </TouchableOpacity>
 
@@ -279,13 +460,11 @@ export default function ProfileScreen() {
                   onPress={() => {
                     setIsStartTime(false);
                     setShowTimePicker(true);
-                   
                   }}
-                  
                 >
                   <Text style={styles.label}>End Time</Text>
                   <Text style={styles.timeValue}>
-                  {endTime ? formatTime(endTime) : initialUser.endTime}
+                    {formatTime(user.endTime)}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -293,32 +472,30 @@ export default function ProfileScreen() {
               <Modal visible={showTimePicker} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
                   <View style={styles.modalContent}>
-                    <View style={{flexDirection:"row",gap:40}}>
-                    <Clock date={clockDate} size={100} />
-                    <TimeRange
-                      dates={timeSlots}
-                      onDateChange={(updatedDate: number) => {
-                        "worklet";
-                        selectedDate.value = updatedDate;
-                      }}
-                  
-                    />
+                    <View style={{ flexDirection: "row", gap: 40 }}>
+                      <Clock date={clockDate} size={100} />
+                      <TimeRange
+                        dates={timeSlots}
+                        onDateChange={(updatedDate: number) => {
+                          "worklet";
+                          selectedDate.value = updatedDate;
+                        }}
+                      />
                     </View>
-                    <View style={{flexDirection:"row",gap:10}}>
+                    <View style={{ flexDirection: "row", gap: 10 }}>
                       <TouchableOpacity
                         onPress={() => {
                           const selected = new Date(selectedDate.value);
-                          const formatted = formatTime(selected);
-                        
                           if (isStartTime) {
                             setStartTime(selected);
-                            setUser({ ...user, startTime: formatted });
+                            setUser((u) => ({ ...u, startTime: selected }));
                           } else {
                             setEndTime(selected);
-                            setUser({ ...user, endTime: formatted });
+                            setUser((u) => ({ ...u, endTime: selected }));
                           }
-                        
+
                           setShowTimePicker(false);
+
                           setIsUpdated(true);
                         }}
                         style={styles.timingContainer}
@@ -336,8 +513,6 @@ export default function ProfileScreen() {
                   </View>
                 </View>
               </Modal>
-
-
 
               <View style={styles.textContainer}>
                 <Text style={styles.inputHeader}>Email</Text>
@@ -368,8 +543,8 @@ export default function ProfileScreen() {
                     withModal={true}
                     countryCode={countryCode}
                     onSelect={(country: Country) => {
-                      setCountryCode((country?.cca2 as CountryCode) || "PK");
-                      setCallingCode(country?.callingCode[0] || "92");
+                      setCountryCode((country?.cca2 as CountryCode));
+                      setCallingCode(country?.callingCode[0]);
                       setVisible(false);
                       setIsUpdated(true);
                     }}
@@ -377,6 +552,7 @@ export default function ProfileScreen() {
                   />
                   <Text style={styles.callingCode}>+{callingCode} ▼</Text>
                 </TouchableOpacity>
+
                 <TextInput
                   style={styles.phoneNumberInput}
                   value={user.phoneNumber}
@@ -395,7 +571,7 @@ export default function ProfileScreen() {
               <DropDownPicker
                 listMode="SCROLLVIEW"
                 open={open}
-                value={gender}
+                value={gender ?? null}
                 items={items}
                 setOpen={setOpen}
                 setValue={setGender}
@@ -407,8 +583,9 @@ export default function ProfileScreen() {
                 dropDownContainerStyle={styles.dropdownContainer}
                 containerStyle={{ marginBottom: open ? 160 : 15 }} // Push UI down when open
                 dropDownDirection="BOTTOM"
+                textStyle={styles.dropdownText}
               />
-              <View style={{marginBottom: 50}}>
+              <View style={{ marginBottom: 50 }}>
                 <View style={styles.textContainer}>
                   <Text style={styles.inputHeader}>CNIC Number</Text>
                 </View>
@@ -430,18 +607,55 @@ export default function ProfileScreen() {
           </TouchableWithoutFeedback>
         </View>
 
-        {isUpdated && (
+        {isUpdated  && !isKeyboardVisible && (
           <View style={styles.bottomContainer}>
             <TouchableOpacity
               style={styles.continueButton}
-              onPress={() => {
+              onPress={async () => {
                 Keyboard.dismiss();
-                setUser((prevUser) => {
-                  const updatedUser = { ...prevUser, gender };
-                  setInitialUser(updatedUser); // Update initialUser
-                  return updatedUser;
-                });
                 setIsUpdated(false);
+                const updatedUser = { ...user, gender };
+                if (!userId) {
+                  throw new Error("No user ID found. User must be logged in.");
+                } else {
+                  const result = await updateUserProfile({
+                    userId: userId,
+                    firstName: updatedUser.firstName || "",
+                    lastName: updatedUser.lastName || "",
+                    clinicName: updatedUser.clinicName || "",
+                    startTime: toTimestamp(user.startTime),
+                    endTime: toTimestamp(user.endTime),
+
+                    email: updatedUser.email || "",
+                    phoneNumber: updatedUser.phoneNumber || "",
+                    countryCode,
+                    callingCode,
+                    gender: gender || "others",
+                  });
+
+                  if (result.success && result.data) {
+                    const parsed = parsePhoneDetails(result.data.phone);
+                    const updatuser = {
+                      firstName: result.data.firstName,
+                      lastName: result.data.lastName,
+                      email: result.data.email,
+                      clinicName: result.data.clinicName,
+                      startTime: result.data.startTime,
+                      endTime: result.data.endTime,
+                      phoneNumber: parsed.phoneNumber,
+                      gender: result.data.gender,
+                      cnic: result.data.cnicNumber, // Map Firestore's cnicNumber to local cnic
+                      countryCode: countryCode,
+                      callingCode: callingCode,
+                    };
+                    setUser(updatuser);
+                    setInitialUser(updatuser);
+                    setCountryCode(countryCode as CountryCode);
+                    setCallingCode(callingCode);
+                    setIsUpdated(false);
+                    return updatuser;
+                  };
+                }
               }}
             >
               <Text style={styles.continueText}>Save</Text>
@@ -449,6 +663,7 @@ export default function ProfileScreen() {
           </View>
         )}
       </View>
+      <Toast ref={toastRef} />
     </SafeAreaView>
   );
 }
@@ -468,13 +683,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    marginTop: 20,
+    marginTop: Platform.OS === "ios" ? 20 : 20,
     marginBottom: 40,
   },
   navText: {
-    fontSize: 24,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     fontWeight: "500",
-    color: "#000",
     position: "absolute",
     textAlign: "center",
     left: 0,
@@ -516,7 +731,8 @@ const styles = StyleSheet.create({
     width: "100%", // Ensures full width
   },
   inputHeader: {
-    fontSize: 14,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     marginBottom: 5,
     fontWeight: 400,
     marginLeft: 5,
@@ -528,7 +744,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderColor: "#d3d3d3",
     backgroundColor: "#fff",
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     marginBottom: 15,
   },
   InputContainer: {
@@ -548,34 +765,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   callingCode: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
   },
   phoneNumberInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     marginLeft: 5,
-  },
-  mobileNumber: {
-    color: "#2BBFFF",
-    fontSize: 16,
-    marginTop: 15,
   },
   dropdown: {
     borderWidth: 1,
     borderColor: "#d3d3d3",
     borderRadius: 8,
-    paddingHorizontal: 10, // Padding inside the dropdown box
+    paddingHorizontal: 10,
     paddingVertical: 8,
+  },
+  dropdownText: {
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
   },
   dropdownContainer: {
     borderWidth: 1,
     borderColor: "#d3d3d3",
     borderRadius: 8,
-    padding: 10, // Padding inside the dropdown options container
+    padding: 10,
   },
   bottomContainer: {
     position: "absolute",
-    bottom: 0, // Change to 50 if needed
+    bottom: 30,
     width: "100%",
   },
   continueButton: {
@@ -592,9 +810,11 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
   },
+
   timeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -608,20 +828,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#d3d3d3",
   },
-  timingContainer:{
+  timingContainer: {
     marginTop: 15,
     backgroundColor: "#1e1e1e",
     padding: 8,
     borderRadius: 8,
-    justifyContent:"center"
+    justifyContent: "center",
   },
   label: {
-    fontSize: 12,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(9),
     color: "#939393",
     marginBottom: 4,
   },
   timeValue: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     color: "#000",
   },
   modalOverlay: {

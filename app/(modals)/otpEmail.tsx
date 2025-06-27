@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -14,14 +14,33 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { router, useLocalSearchParams } from "expo-router";
-
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSignUp } from "@clerk/clerk-expo";
+import { useSignIn } from "@clerk/clerk-expo";
+import responsive from "@/constants/Responsive";
+import Toast from "@/components/utils/toast";
 export default function OTPVerification() {
-  const { from } = useLocalSearchParams();
+  const { email, from } = useLocalSearchParams();
   const navigation = useNavigation();
-  const [otp, setOtp] = useState(["", "", "", ""]);
   const inputRefs = useRef<Array<TextInput | null>>([]);
-  
+  const { signIn, isLoaded: isSignInLoaded } = useSignIn();
+  const router = useRouter();
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const rawEmail = useLocalSearchParams().email;
+  const emaill = Array.isArray(rawEmail) ? rawEmail[0] : rawEmail;
+  const { signUp, setActive, isLoaded } = useSignUp();
+  const [isLoading, setIsLoading] = useState(false);
+  const toastRef = useRef<any>({});
+
+  const maskEmail = (email: string) => {
+    const [name, domain] = email.split("@");
+    if (name.length <= 2) return email;
+
+    const maskedName =
+      name[0] + "*".repeat(name.length - 2) + name[name.length - 1];
+    return `${maskedName}@${domain}`;
+  };
+
   // Handle OTP input changes
   const handleInputChange = (text: string, index: number) => {
     if (text.length === 1 && index < otp.length - 1) {
@@ -44,6 +63,68 @@ export default function OTPVerification() {
     setOtp(newOtp);
   };
 
+  const signupVerifyCode = async () => {
+    try {
+      if (!signUp || !isLoaded) return;
+
+      const fullCode = otp.join("");
+      if (fullCode.length < 6) return;
+
+      await signUp.attemptEmailAddressVerification({
+        code: fullCode,
+      });
+
+      router.replace("/(forgotPassword)/createPassword");
+    } catch (err) {
+      toastRef.current.show({
+        type: "error",
+        title: "Invalid Code",
+        description: "The OTP entered is incorrect",
+      });
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (!isLoaded) return;
+    try {
+      // resend the email verification code
+      await signUp.create({
+        emailAddress: email.toString(), 
+      });
+      await signUp.prepareEmailAddressVerification();
+    } catch (error) {
+      toastRef.current.show({
+        type: "error",
+        title: "Failed to resend code",
+        description: "Please try again in a few seconds.",
+      });
+    }
+
+  };
+
+  const forgotVerifyCode = async () => {
+    try {
+      if (!signIn || !isSignInLoaded) return;
+      // Use the joined OTP digits
+      const fullCode = otp.join("");
+
+      const result = await signIn.attemptFirstFactor({
+        strategy: "reset_password_email_code",
+        code: fullCode,
+      });
+
+      if (result.status === "needs_new_password") {
+        router.replace("/(forgotPassword)/newPassword");
+      }
+    } catch (err) {
+      toastRef.current.show({
+        type: "error",
+        title: "Invalid Code",
+        description: "The OTP entered is incorrect",
+      });
+    }
+  };
+
   // Handle keyboard dismiss on tap
   const dismissKeyboard = () => {
     Keyboard.dismiss();
@@ -51,7 +132,7 @@ export default function OTPVerification() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
       style={styles.container}
     >
@@ -80,27 +161,29 @@ export default function OTPVerification() {
           <View style={styles.textContainer}>
             <Text style={styles.title}>Enter authentication code</Text>
             <Text style={styles.subtitle}>
-              Enter the 4-digit that we have sent via the email
-              w********e@gmail.com
+              Enter the 6-digit that we have sent via the email{" "}
+              {email ? maskEmail(emaill) : ""}
             </Text>
           </View>
 
-          {/* Input Fields */}
+
           <View style={styles.otpContainer}>
             {otp.map((digit, index) => (
               <TextInput
                 key={index}
-                ref={(el) => (inputRefs.current[index] = el)}
+                ref={(el) => (inputRefs.current[index] = el)} 
                 style={[
                   styles.otpInput,
                   digit ? styles.filledOtpInput : styles.emptyOtpInput,
                 ]}
                 keyboardType="number-pad"
-                maxLength={1}
-                value={digit}
-                onChangeText={(text) => handleInputChange(text, index)}
-                onKeyPress={({ nativeEvent }) =>
-                  nativeEvent.key === "Backspace" && handleBackspace("", index)
+                maxLength={1} 
+                value={digit} 
+                onChangeText={(text) => handleInputChange(text, index)} 
+                onKeyPress={
+                  ({ nativeEvent }) =>
+                    nativeEvent.key === "Backspace" &&
+                    handleBackspace("", index) 
                 }
               />
             ))}
@@ -111,25 +194,30 @@ export default function OTPVerification() {
             <TouchableOpacity
               style={[
                 styles.continueButton,
-                otp.join("").length < 4 && styles.disabledButton,
+                (otp.join("").length !== 6 || isLoading) &&
+                  styles.disabledButton,
               ]}
-              disabled={otp.join("").length < 4}
+              disabled={otp.join("").length !== 6}
               onPress={() => {
                 if (from === "forgotPassword") {
-                  router.replace("/(forgotPassword)/newPassword");
+                  forgotVerifyCode();
                 } else if (from === "signup") {
-                  router.replace("/(forgotPassword)/createPassword");
-                }
+                  signupVerifyCode();
+                } 
               }}
             >
               <Text style={styles.continueText}>Continue</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.resendContainer}>
+            <TouchableOpacity
+              style={styles.resendContainer}
+              onPress={handleResendCode}
+            >
               <Text style={styles.resendText}>Resend code</Text>
             </TouchableOpacity>
           </View>
         </View>
       </TouchableWithoutFeedback>
+      <Toast ref={toastRef} />
     </KeyboardAvoidingView>
   );
 }
@@ -148,12 +236,12 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between", // Back button left & email right
+    justifyContent: "space-between", 
     width: "100%",
     marginTop: Platform.OS === "ios" ? 50 : 20,
   },
   navText: {
-    fontSize: 16,
+    fontSize:  Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "500",
     color: "#2BBFFF",
   },
@@ -162,14 +250,14 @@ const styles = StyleSheet.create({
   },
   title: {
     textAlign: "center",
-    fontSize: 30,
+    fontSize:  Platform.OS === "ios" ? responsive.fontSize(29) : responsive.fontSize(23),
     fontWeight: "600",
     color: "#000",
     marginTop: 40,
     marginBottom: 10,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize:  Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     color: "#000",
     marginBottom: 30,
     marginTop: 10,
@@ -177,7 +265,8 @@ const styles = StyleSheet.create({
   },
   otpContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
+    gap:6,
     width: "80%",
     marginBottom: 30,
   },
@@ -187,7 +276,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#d3d3d3",
     textAlign: "center",
-    fontSize: 22,
+    fontSize:  Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     borderRadius: 10,
   },
   emptyOtpInput: {
@@ -220,7 +309,7 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize:  Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
   },
   resendContainer: {
@@ -232,7 +321,7 @@ const styles = StyleSheet.create({
   resendText: {
     marginTop: 10,
     color: "#2BBFFF",
-    fontSize: 16,
+    fontSize:  Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
   },
 });

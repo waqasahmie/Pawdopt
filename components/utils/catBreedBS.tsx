@@ -5,13 +5,16 @@ import {
   View,
   Animated,
   Dimensions,
+  Platform,
 } from "react-native";
 import React, { useEffect, useState } from "react";
+import { useAppContext } from "../../hooks/AppContext";
+import responsive from "@/constants/Responsive";
 
 type CatBreedBSProps = {
-  // closeModal: () => void;
-  onCloseAndOpenModal?: () => void; // NEW
-  direction?: "vertical" | "horizontal"; // <-- NEW
+  onCloseAndOpenModal?: () => void; 
+  onSelectBreed?: (breed: string) => void;
+  direction?: "vertical" | "horizontal"; 
 };
 
 const screenHeight = Dimensions.get("window").height;
@@ -32,35 +35,34 @@ const breeds = [
 export const CatBreedBS = ({ onCloseAndOpenModal, direction = "vertical" }: CatBreedBSProps) => {
   const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
 
-  const [selectedBreeds, setSelectedBreeds] = useState<string[]>([]);
-
+  const { updatePetListingData,petListingData  } = useAppContext();
+  const [selectedBreeds, setSelectedBreeds] = useState<string[]>(
+    petListingData.breed?.length > 0 ? petListingData.breed : []
+  );
   const toggleSelection = (breed: string) => {
-    // If the breed is already selected, remove it. Otherwise, select it.
     if (selectedBreeds.includes(breed)) {
-      setSelectedBreeds([]); // Deselect the breed
+      setSelectedBreeds([]); 
     } else {
-      setSelectedBreeds([breed]); // Select only the clicked breed
+      setSelectedBreeds([breed]); 
     }
-  };
+  }; 
 
   useEffect(() => {
     Animated.timing(slideAnim, {
-      toValue: 0, // Animate the modal to position 0 (visible)
+      toValue: 0, 
       duration: 300,
       useNativeDriver: true,
     }).start();
-  }, [slideAnim]); // Only runs when the component mounts
+  }, [slideAnim]); 
 
   const [fadeAnim] = useState(new Animated.Value(1));
-  // When the modal closes, we animate it to slide down
   const handleContinue = () => {
-    // Trigger fade out
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 200,
       useNativeDriver: true,
     }).start(() => {
-      //closeModal(); // Call the closeModal prop to close the modal after animation
+        updatePetListingData("breed", selectedBreeds);
       onCloseAndOpenModal && onCloseAndOpenModal();
     });
   };
@@ -111,10 +113,10 @@ export const CatBreedBS = ({ onCloseAndOpenModal, direction = "vertical" }: CatB
         <TouchableOpacity
           style={[
             styles.ContinueButton,
-            !selectedBreeds.length && { backgroundColor: "#ccc" }, // Disable button if no breed selected
+            !selectedBreeds.length && { backgroundColor: "#ccc" }, 
           ]}
           onPress={handleContinue}
-          disabled={!selectedBreeds.length} // Disable button if no breed is selected
+          disabled={!selectedBreeds.length} 
         >
           <Text style={styles.ContinueText}>Continue</Text>
         </TouchableOpacity>
@@ -122,6 +124,7 @@ export const CatBreedBS = ({ onCloseAndOpenModal, direction = "vertical" }: CatB
     </Animated.View>
   );
 };
+
 
 const styles = StyleSheet.create({
   indicator: {
@@ -141,12 +144,14 @@ const styles = StyleSheet.create({
   title: {
     marginTop: 40,
     marginBottom: 5,
-    fontSize: 20,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(19) : responsive.fontSize(16),
     fontWeight: "700",
     width: "90%",
   },
   subTitle: {
-    fontSize: 14,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     color: "#939393",
     fontWeight: "500",
     width: "90%",
@@ -173,7 +178,8 @@ const styles = StyleSheet.create({
   },
   breedText: {
     textAlign: "center",
-    fontSize: 14,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     fontWeight: "600",
     color: "#2BBFFF",
   },
@@ -200,7 +206,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#2BBFFF",
   },
   ContinueText: {
-    fontSize: 18,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     color: "#fff",
     fontWeight: "700",
   },

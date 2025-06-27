@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -15,10 +15,21 @@ import {
 import { Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-
+import { router, useLocalSearchParams } from "expo-router";
+import { addDoc, collection, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { db } from "@/config/firebaseConfig";
+import { useUser } from "@clerk/clerk-expo";
+import { useAppContext, UserData } from "@/hooks/AppContext";
+import responsive from "@/constants/Responsive";
+import Toast from "@/components/utils/toast";
+import { SafeAreaView } from "react-native-safe-area-context";
 export default function Payment() {
   const navigation = useNavigation();
   const [rating, setRating] = useState(0);
+  const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
+  const [booking, setBooking] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [vet, setVet] = useState<any>(null);
   const starImages = [
     require("../../assets/images/poor.png"),
     require("../../assets/images/better.png"),
@@ -34,8 +45,88 @@ export default function Payment() {
     require("../../assets/images/excited_fill.png"),
   ];
   const [comment, setComment] = useState<string>("");
-
   const isPayButtonDisabled = rating === 0 || comment.trim() === "";
+  const { user } = useUser();
+  const toastRef = useRef<any>({});
+  const { userData } = useAppContext();
+  useEffect(() => {
+    if (!bookingId) return;
+
+    (async () => {
+      try {
+        // fetch the appointment
+        const bSnap = await getDoc(doc(db, "appointments", bookingId));
+        if (!bSnap.exists()) throw new Error("Booking not found");
+        const bData = bSnap.data();
+        setBooking(bData);
+
+        // fetch the vet
+        const vSnap = await getDoc(doc(db, "users", bData.vetId));
+        if (vSnap.exists()) setVet(vSnap.data());
+      } catch (err) {
+        console.error(err);
+      } 
+    })();
+  }, [bookingId]);
+
+  const submitReview = async () => {
+    if (
+      isSubmitting ||
+      !user?.id ||
+      !booking.vetId ||
+      rating === 0 ||
+      comment.trim() === ""
+    ) {
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const ratingsRef = collection(db, "reviews", booking.vetId, "ratings");
+      await addDoc(ratingsRef, {
+        userId: user.id,
+        rating,
+        comment: comment.trim(),
+        createdAt: serverTimestamp(),
+      });
+
+      const apptRef = doc(db, "appointments", bookingId);
+    await updateDoc(apptRef, {
+      status: "done",           
+    });
+
+      const snap = await getDocs(ratingsRef);
+      let sum = 0;
+      snap.forEach((d) => {
+        sum += d.data().rating;
+      });
+      const count = snap.size;
+      const avg = count > 0 ? sum / count : 0;
+
+      const ownerDocRef = doc(db, "reviews", booking.vetId);
+      await setDoc(
+        ownerDocRef,
+        {
+          averageRating: avg,
+          ratingCount: count,
+        },
+        { merge: true }
+      );
+
+      toastRef.current.show({
+        type: "success",
+        title: "Thank You",
+        description: "Your review has been submitted.",
+      });
+      
+      setRating(0);
+      setComment("");
+      router.replace("/(tabs)");
+    } catch (err) {
+      console.error("Error saving review:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const dismissKeyboard = () => {
     Keyboard.dismiss();
@@ -43,17 +134,11 @@ export default function Payment() {
 
   return (
     <KeyboardAvoidingView style={styles.container}>
-      <View style={styles.innerContainer}>
+      <SafeAreaView style={styles.innerContainer}>
         <StatusBar barStyle="dark-content" />
 
         {/* Back Button (Positioned Below Status Bar) */}
         <View style={styles.headerContainer}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{ zIndex: 10 }}
-          >
-            <MaterialIcons name="arrow-back-ios-new" size={16} color="black" />
-          </TouchableOpacity>
           <Text style={styles.navText}>Payment</Text>
         </View>
         <View style={styles.scrollContainer}>
@@ -66,18 +151,28 @@ export default function Payment() {
           <View style={styles.cardRow}>
             <Text style={styles.label}>Service</Text>
             <Text style={styles.value}>
-              Surgery (Spaying)
+            {booking?.service}
             </Text>
           </View>
-          <View style={styles.cardRow}>
+          <View style={styles.cardRow}>    
             <Text style={[styles.label, { alignSelf: "center" }]}>Doctor</Text>
             <View style={{ flexDirection: "column" }}>
               <Text style={styles.value}>
-                Dr. Asad
+              {vet?.title} {vet?.firstName} {vet?.lastName}
               </Text>
             </View>
           </View>
         </View>
+        {booking?.notes?.trim() !== '' && (
+        <View style={styles.cardContainer}>
+          <View style={styles.cardColumn}>
+            <Text style={styles.label}>Notes from Vet: </Text>
+            <Text style={styles.value}>
+            {booking?.notes}
+            </Text>
+          </View>
+        </View>
+        )}
         <View style={styles.ReviewContainer}>
           <Text style={styles.reviewText}>Tell us about your experience?</Text>
           <View style={styles.stars}>
@@ -96,7 +191,7 @@ export default function Payment() {
             ))}
           </View>
           <TextInput
-                placeholder="Dr. Asad is professional, caring, & ......"
+                placeholder="Doctor was professional, caring, & ......"
                 style={styles.commentBox}
                 placeholderTextColor="#939393"
                 autoCapitalize="sentences"
@@ -108,7 +203,7 @@ export default function Payment() {
         <View style={styles.cardContainer}>
           <View style={styles.cardRow}>
             <Text style={styles.label}>Total amount</Text>
-            <Text style={[styles.value, { fontSize: 14 }]}>PKR 15499.00</Text>
+            <Text style={styles.value}>PKR {booking?.fees}</Text>
           </View>
           <View style={styles.cardRow}>
             <View style={styles.paymentCard}>
@@ -127,11 +222,12 @@ export default function Payment() {
         </TouchableWithoutFeedback>
         </View>
         <View style={styles.bottomContainer}>
-          <TouchableOpacity style={[styles.payButton, isPayButtonDisabled && styles.disabledButton]} disabled={isPayButtonDisabled}>
+          <TouchableOpacity onPress={submitReview} style={[styles.payButton, isPayButtonDisabled && styles.disabledButton]} disabled={isPayButtonDisabled}>
             <Text style={styles.payText}>Pay</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
+      <Toast ref={toastRef} />
     </KeyboardAvoidingView>
   );
 }
@@ -151,11 +247,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    marginTop: 20,
+    marginTop: Platform.OS === "ios" ? 20 : 20,
     marginBottom: 40,
   },
   navText: {
-    fontSize: 24,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     fontWeight: "500",
     color: "#000",
     position: "absolute",
@@ -182,13 +278,17 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 16,
   },
+  cardColumn: {
+    marginTop: 20,
+    marginBottom: 16,
+  },
   label: {
-    fontSize: 14,
+   fontSize: Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     fontWeight: 600,
     color: "#939393",
   },
   value: {
-    fontSize: 14,
+   fontSize: Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     fontWeight: 500,
     color: "#ACACAC",
   },
@@ -204,7 +304,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   reviewText: {
-    fontSize: 18,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     fontWeight: 500,
     color: "#5B555C",
   },
@@ -224,7 +324,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 10,
     borderRadius: 12,
-    fontSize: 16,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: 400,
   },
   paymentCard: {
@@ -242,7 +342,7 @@ const styles = StyleSheet.create({
     height: 12,
   },
   paymentCardText: {
-    fontSize: 16,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: 600,
     flex: 1,
     alignSelf: "center",
@@ -257,13 +357,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   changeText: {
-    fontSize: 14,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     color: "#2bbfff",
     fontWeight: 700,
   },
   bottomContainer: {
     position: "absolute",
-    bottom: 40, // Change to 50 if needed
+    bottom: 40, 
     width: "100%",
   },
   payButton: {
@@ -280,7 +380,7 @@ const styles = StyleSheet.create({
   },
   payText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
   },
   disabledButton: {

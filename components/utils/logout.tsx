@@ -4,35 +4,36 @@ import {
   TouchableOpacity,
   View,
   Animated,
-  Easing,
   Dimensions,
+  Platform,
 } from "react-native";
 import React, { useEffect, useState } from "react";
+import responsive from "@/constants/Responsive";
 
 type LogoutProps = {
   closeModal: () => void;
+  onConfirmLogout: () => void; 
 };
 
 const screenHeight = Dimensions.get("window").height;
 
-export const Logout = ({ closeModal }: LogoutProps) => {
+export const Logout = ({ closeModal ,onConfirmLogout }: LogoutProps) => {
     const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
 
   useEffect(() => {
     Animated.timing(slideAnim, {
-      toValue: 0, // Animate the modal to position 0 (visible)
+      toValue: 0, 
       duration: 300,
       useNativeDriver: true,
     }).start();
-  }, [slideAnim]); // Only runs when the component mounts
-  // When the modal closes, we animate it to slide down
+  }, [slideAnim]); 
   const handleClose = () => {
     Animated.timing(slideAnim, {
-      toValue: screenHeight * 0.9, // Move the modal out of the screen (down)
+      toValue: screenHeight * 0.9, 
       duration: 300,
       useNativeDriver: true,
     }).start(() => {
-      closeModal(); // Call the closeModal prop to close the modal after animation
+      closeModal(); 
     });
   };
 
@@ -49,7 +50,7 @@ export const Logout = ({ closeModal }: LogoutProps) => {
         <TouchableOpacity style={styles.cancelButton} onPress={handleClose}>
           <Text style={styles.cancelText}>No, Cancel</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.logoutButton}>
+        <TouchableOpacity style={styles.logoutButton} onPress={onConfirmLogout}>
           <Text style={styles.logoutText}>Yes, Logout</Text>
         </TouchableOpacity>
       </View>
@@ -76,23 +77,20 @@ const styles = StyleSheet.create({
   title: {
     marginTop: 20,
     marginBottom: 10,
-    fontSize: 26,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(25) : responsive.fontSize(20),
     color: "#FF0900",
     fontWeight: "500",
   },
   line: {
     height: 1,
     width: "90%",
-    // marginTop: 20,
     backgroundColor: "#F0F0F0",
   },
   subTitle: {
-    // marginTop: 20,
-    fontSize: 16,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     color: "#939393",
     textAlign: "center",
     fontWeight: "400",
-    // paddingHorizontal: 20,
   },
   buttonsContainer: {
     flexDirection: "row",
@@ -114,7 +112,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F2FBFF",
   },
   cancelText: {
-    fontSize: 16,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     color: "#2BBFFF",
     fontWeight: "700",
   },
@@ -126,7 +124,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#2BBFFF",
   },
   logoutText: {
-    fontSize: 16,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     color: "#fff",
     fontWeight: "700",
   },

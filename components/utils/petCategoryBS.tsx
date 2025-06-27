@@ -7,13 +7,16 @@ import {
   Image,
   Dimensions,
   Pressable,
+  Platform,
 } from "react-native";
 import React, { useEffect, useState } from "react";
+import { useAppContext } from "../../hooks/AppContext";
+import responsive from "@/constants/Responsive";
 
 type PetCategoryProps = {
-  onCloseAndOpenModal?: () => void; // NEW
+  onCloseAndOpenModal?: () => void;
   onSelectCategory?: (category: string) => void;
-  direction?: "vertical" | "horizontal"; // <-- NEW
+  direction?: "vertical" | "horizontal"; 
 };
 
 const screenHeight = Dimensions.get("window").height;
@@ -38,26 +41,56 @@ const categories = [
   },
 ];
 
-export const PetCategoryBS = ({ onCloseAndOpenModal, onSelectCategory, direction = "vertical" }: PetCategoryProps) => {
+export const PetCategoryBS = ({ onCloseAndOpenModal, onSelectCategory, direction = "vertical"}: PetCategoryProps) => {
   const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  function getCategoryIdFromName(name: string | null): string | null {
+    if (!name) return null;
+    const found = categories.find((c) =>
+      c.name.toLowerCase().endsWith(name.toLowerCase())
+    );
+    return found ? found.id : null;
+  }
+  const { resetPetListingData ,updatePetListingData ,petListingData} = useAppContext();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(() => {
+    return getCategoryIdFromName(petListingData.category ?? null);
+  });
   const [fadeAnim] = useState(new Animated.Value(1));
   useEffect(() => {
     Animated.timing(slideAnim, {
-      toValue: 0, // Animate the modal to position 0 (visible)
+      toValue: 0, 
       duration: 300,
       useNativeDriver: true,
     }).start();
-  }, [slideAnim]); // Only runs when the component mounts
+  }, [slideAnim]); 
 
+  
   const handleContinue = () => {
-    // Trigger fade out
+    if (selectedCategory) {
+      let petType = "";
+  
+      // Match ID to actual pet type name
+      switch (selectedCategory) {
+        case "1":
+          petType = "Cat";
+          break;
+        case "2":
+          petType = "Dog";
+          break;
+        case "3":
+          petType = "Parrot";
+          break;
+        default:
+          petType = "";
+      }
+  
+      updatePetListingData("category", petType); 
+      onSelectCategory && onSelectCategory(petType); 
+    }
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 200,
       useNativeDriver: true,
     }).start();
-    //closeModal();
     onCloseAndOpenModal && onCloseAndOpenModal();
     if (selectedCategory) {
       onSelectCategory && onSelectCategory(selectedCategory);
@@ -107,7 +140,7 @@ export const PetCategoryBS = ({ onCloseAndOpenModal, onSelectCategory, direction
           style={[
             styles.ContinueButton,
             {
-              backgroundColor: selectedCategory ? "#2BBFFF" : "#ccc", // Change color if selected
+              backgroundColor: selectedCategory ? "#2BBFFF" : "#ccc", 
             },
           ]}
           onPress={() => {
@@ -121,6 +154,7 @@ export const PetCategoryBS = ({ onCloseAndOpenModal, onSelectCategory, direction
     </Animated.View>
   );
 };
+
 
 const styles = StyleSheet.create({
   indicator: {
@@ -140,12 +174,14 @@ const styles = StyleSheet.create({
   title: {
     marginTop: 40,
     marginBottom: 5,
-    fontSize: 20,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(19) : responsive.fontSize(16),
     fontWeight: "700",
     width: "90%",
   },
   subTitle: {
-    fontSize: 14,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     color: "#939393",
     fontWeight: "500",
     width: "90%",
@@ -170,7 +206,8 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     flex: 1,
-    fontSize: 16,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "500",
     color: "#939393",
   },
@@ -197,7 +234,8 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   ContinueText: {
-    fontSize: 18,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     color: "#fff",
     fontWeight: "700",
   },

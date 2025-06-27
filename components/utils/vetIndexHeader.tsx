@@ -1,13 +1,12 @@
-// components/CustomHeader.tsx
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Platform } from "react-native";
+import { View, Text, StyleSheet, Platform, Pressable } from "react-native";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import { Calendar02Icon } from "@hugeicons/core-free-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import responsive from "@/constants/Responsive";
 
 const CustomHeader = () => {
-
   return (
     <View style={styles.headerContainer}>
       <View style={styles.greetingContainer}>
@@ -17,8 +16,15 @@ const CustomHeader = () => {
       </View>
 
       <View style={styles.iconRow}>
-        <Ionicons name="paw" size={26} color="#2bbfff" onPress={() => router.push('/(tabs)')}/>
-        <HugeiconsIcon icon={Calendar02Icon} />
+        <Ionicons
+          name="paw"
+          size={26}
+          color="#2bbfff"
+          onPress={() => router.push("/(tabs)")}
+        />
+        <Pressable onPress={() => router.push("/appointments")}>
+          <HugeiconsIcon icon={Calendar02Icon} />
+        </Pressable>
       </View>
     </View>
   );
@@ -28,7 +34,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 50 : 40,
+    paddingTop: Platform.OS === "ios" ? 50 : 20,
     paddingBottom: 10,
     paddingHorizontal: 16,
     backgroundColor: "#fff",
@@ -39,7 +45,7 @@ const styles = StyleSheet.create({
     width: "60%",
   },
   greetingText: {
-    fontSize: 18,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     fontWeight: "500",
   },
   iconRow: {

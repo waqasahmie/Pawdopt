@@ -86,6 +86,7 @@ export const TimeRange: React.FC<TimePickerProps> = ({
       {/* Gradient overlays for fade effect */}
       <Animated.FlatList
         onScroll={onScroll}
+        nestedScrollEnabled={true}
         decelerationRate="fast"
         snapToAlignment="center"
         snapToOffsets={datesMs.map((_, i) => i * ITEM_HEIGHT)}

@@ -1,0 +1,38 @@
+{
+  "cli": {
+    "version": ">= 16.3.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "apk": {
+        "android": {
+          "buildType": "apk"
+        }
+      },
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "hexagone.playstore@gmail.com",
+        "ascAppId": "6747598254",
+        "appleTeamId": "K68YLX26MA"
+      }
+    }
+  }
+}

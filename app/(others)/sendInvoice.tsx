@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -15,22 +15,55 @@ import {
 import { Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useLocalSearchParams } from 'expo-router';
+import { useAppContext } from '@/hooks/AppContext';
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../../config/firebaseConfig";
+import responsive from "@/constants/Responsive";
+import Toast from "@/components/utils/toast";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SendInvoice() {
   const navigation = useNavigation();
   const dismissKeyboard = () => {
     Keyboard.dismiss();
   };
-
+  const toastRef = useRef<any>({});
   const [services, setServices] = useState("");
   const [fees, setFees] = useState("");
   const [notes, setNotes] = useState("");
-
+  const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
+  const { appointments } = useAppContext();
   const isButtonDisabled = !services || !fees;
+  const appt = appointments.find(a => a.id === bookingId);
+
+  const handleSendInvoice = async () => {
+    if (!bookingId) return;
+
+    try {
+      const apptRef = doc(db, "appointments", bookingId);
+      await updateDoc(apptRef, {
+        service: services,
+        fees: Number(fees),
+        notes,
+        invoiceSentAt: serverTimestamp(),
+      });
+      toastRef.current.show({
+        type: "success",
+        title: "Success",
+        description: "Invoice sent successfully.",
+      });
+      
+      navigation.goBack();
+    } catch (err) {
+      console.error("Error saving invoice:", err);
+    }
+  };
+  
 
   return (
     <KeyboardAvoidingView style={styles.container}>
-      <View style={styles.innerContainer}>
+      <SafeAreaView style={styles.innerContainer}>
         <StatusBar barStyle="dark-content" />
 
         {/* Back Button (Positioned Below Status Bar) */}
@@ -51,12 +84,9 @@ export default function SendInvoice() {
             >
               <View style={styles.card}>
                 <View style={styles.info}>
-                  <Image
-                    source={{ uri: "https://placedog.net/300/200?id=1" }} // Replace with pet image
-                    style={styles.image}
-                  />
+                <Image source={{ uri: appt?.picture }} style={styles.image} />
                   <View> 
-                    <Text style={styles.name}>Aleysha Amir</Text>
+                    <Text style={styles.name}>{appt?.name}</Text>
                   </View>
                 </View>
               </View>
@@ -90,7 +120,7 @@ export default function SendInvoice() {
                   onChangeText={setNotes}
                   style={[styles.input, styles.textArea]}
                   multiline
-                  textAlignVertical="top" // Makes text start from top-left like a textarea
+                  textAlignVertical="top" 
                 />
               </View>
             </ScrollView>
@@ -103,11 +133,13 @@ export default function SendInvoice() {
               isButtonDisabled && styles.disabledButton,
             ]}
             disabled={isButtonDisabled}
+            onPress={handleSendInvoice}
           >
             <Text style={styles.payText}>Send Invoice</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
+      <Toast ref={toastRef} />
     </KeyboardAvoidingView>
   );
 }
@@ -127,11 +159,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    marginTop: Platform.OS === "ios" ? 50 : 20,
+    marginTop: Platform.OS === "ios" ? 20 : 20,
     marginBottom: 40,
   },
   navText: {
-    fontSize: 24,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     fontWeight: "500",
     color: "#000",
     position: "absolute",
@@ -141,7 +173,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     width: "100%",
-    marginBottom: "50%",
+    marginBottom: "10%",
   },
   card: {
     backgroundColor: "#fff",
@@ -162,25 +194,25 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   name: {
-    fontSize: 18,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     fontWeight: "bold",
     marginRight: 10,
   },
   owner: {
-    fontSize: 14,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     color: "#777",
   },
   label: {
     fontWeight: "bold",
     marginTop: 8,
     marginBottom: 4,
-    fontSize: 14,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
   },
   input: {
     backgroundColor: "#f5f5f5",
     borderRadius: 10,
     padding: 10,
-    fontSize: 14,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
   },
   textArea: {
     height: 100,
@@ -188,7 +220,7 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     position: "absolute",
-    bottom: 40, // Change to 50 if needed
+    bottom: 40, 
     width: "100%",
   },
   payButton: {
@@ -205,7 +237,7 @@ const styles = StyleSheet.create({
   },
   payText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
   },
   disabledButton: {

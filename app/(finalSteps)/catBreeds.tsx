@@ -11,6 +11,9 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router, useLocalSearchParams } from "expo-router";
+import { useAppContext } from "../../hooks/AppContext";
+import responsive from "@/constants/Responsive";
+
 const breeds = [
   "Persian",
   "Siamese",
@@ -30,8 +33,8 @@ const breeds = [
 export default function BreedPreferences() {
   const navigation = useNavigation();
   const { role } = useLocalSearchParams();
-  console.log("Role received:", role);
   const [selectedBreeds, setSelectedBreeds] = useState<string[]>([]);
+  const { updateRegistrationData } = useAppContext();
 
   const toggleSelection = (breed: string) => {
     if (selectedBreeds.includes(breed)) {
@@ -59,7 +62,7 @@ export default function BreedPreferences() {
           <View style={styles.progressBarContainer}>
             <View style={styles.progressBar} />
           </View>
-          <Text style={{ color: "#939393", fontSize: 16 }}>3/4</Text>
+          <Text style={styles.pageIndicator}>3/4</Text>
         </View>
 
         {/* Top Left Background Image */}
@@ -82,7 +85,7 @@ export default function BreedPreferences() {
             adopt. Based on your previous choice. Select all that apply.
           </Text>
         </View>
-
+    
         {/* Breed Selection */}
         <View style={styles.breedContainer}>
           {breeds.map((breed, index) => (
@@ -108,7 +111,12 @@ export default function BreedPreferences() {
 
         {/* Continue Button */}
         <View style={styles.bottomContainer}>
-          <TouchableOpacity style={styles.continueButton} onPress={() => router.push(`/(finalSteps)/ownerAdopter?role=${role}`)}>
+          <TouchableOpacity style={styles.continueButton} 
+          onPress={() => {
+            updateRegistrationData("favoriteBreeds", selectedBreeds); 
+            router.push(`/(finalSteps)/ownerAdopter?role=${role}`); 
+          }}
+          >
             <Text style={styles.continueText}>Continue</Text>
           </TouchableOpacity>
         </View>
@@ -127,14 +135,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     paddingHorizontal: 20,
-    paddingVertical: 50,
   },
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between", // Back button left & email right
+    justifyContent: "space-between", 
     width: "100%",
-    marginTop: Platform.OS === "ios" ? 0 : -20,
+    marginTop: Platform.OS === "ios" ? 70 : 20,
   },
   topLeftImage: {
     position: "absolute",
@@ -142,7 +149,6 @@ const styles = StyleSheet.create({
     left: 0,
     width: "90%",
     height: "40%",
-    resizeMode: "contain",
   },
   bottomRightImage: {
     position: "absolute",
@@ -150,31 +156,37 @@ const styles = StyleSheet.create({
     right: 0,
     width: "96%",
     height: "49%",
-    resizeMode: "contain",
   },
   textContainer: {
-    width: "100%", // Ensures full width
+    width: "100%", 
+  },
+  pageIndicator: {
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
+    color: "#939393",
   },
   title: {
-    fontSize: 30,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(29) : responsive.fontSize(23),
     fontWeight: "600",
     color: "#000",
     marginTop: 40,
     marginBottom: 10,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     color: "#939393",
-    lineHeight: 24, // 1.5 times the font size (16 * 1.5)
+    lineHeight: Platform.OS === "ios" ? 24 : 20, 
     marginBottom: 30,
   },
   progressBarContainer: {
-    flexDirection: "row", // new
+    flexDirection: "row",
     width: "70%",
     height: 8,
     backgroundColor: "#E0E0E0",
     borderRadius: 4,
-    overflow: "hidden", // Ensures the border radius is applied correctly
+    overflow: "hidden", 
   },
   progressBar: {
     width: "75%",
@@ -191,7 +203,7 @@ const styles = StyleSheet.create({
   breedButton: {
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 15,
+    paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 30,
     borderWidth: 1,
@@ -205,7 +217,8 @@ const styles = StyleSheet.create({
   },
   breedText: {
     textAlign: "center",
-    fontSize: 18,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(13),
     color: "#2BBFFF",
   },
   selectedBreedText: {
@@ -213,7 +226,7 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     position: "absolute",
-    bottom: 40, // Change to 50 if needed
+    bottom: 40, 
     width: "100%",
   },
   continueButton: {
@@ -230,7 +243,8 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
   },
 });

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,9 @@ import {
   Animated,
   TouchableWithoutFeedback,
   Pressable,
+  ActivityIndicator,
+  Linking,
+  Platform,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -21,22 +24,115 @@ import {
   Share08Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import { db } from "../../config/firebaseConfig"; // Assuming you are using Firebase
+import {
+  arrayRemove,
+  arrayUnion,
+  doc,
+  getDoc,
+  updateDoc,
+} from "firebase/firestore";
+import { useUser } from "@clerk/clerk-expo";
+import responsive from "@/constants/Responsive";
+import { red } from "react-native-reanimated/lib/typescript/Colors";
 
-const Images = [
-  require("../../assets/images/pet1.jpg"),
-  require("../../assets/images/pet2.jpg"),
-  require("../../assets/images/pet3.jpg"),
-  require("../../assets/images/pet4.jpg"),
-  require("../../assets/images/pet5.jpg"),
-];
+interface Pet {
+  name: string;
+  age: string;
+  breed: string[];
+  category: string;
+  createdAt: string;
+  description: string;
+  eyeColor: string;
+  gender: string;
+  image: string[];
+  ownerId: string;
+  price: number;
+  weight: string;
+}
 
 export default function PetDetail() {
   const navigation = useNavigation();
   const [liked, setLiked] = useState(false);
+  const [petDetails, setPetDetails] = useState<Pet | null>(null);
+  const [ownerDetails, setOwnerDetails] = useState<any>(null);
   const scale = useRef(new Animated.Value(1)).current;
+  const { petId } = useLocalSearchParams<{ petId: string }>();
+  const [loading, setLoading] = useState(true);
+  const [chatId, setChatId] = useState<string>("");
+  const { user } = useUser();
+  useEffect(() => {
+    const fetchPetData = async () => {
+      if (petId) {
+        try {
+          const petRef = doc(db, "petlistings", petId);
+          const petSnap = await getDoc(petRef);
 
-  const animateHeart = () => {
+          if (petSnap.exists()) {
+            const petData = petSnap.data() as Pet;
+            setPetDetails(petData);
+          }
+        } catch (error) {
+          console.error("Error fetching pet details:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchPetData();
+  }, [petId]);
+
+  useEffect(() => {
+    const fetchOwnerDetails = async () => {
+      if (petDetails?.ownerId) {
+        try {
+          const ownerRef = doc(db, "users", petDetails.ownerId);
+          const ownerSnap = await getDoc(ownerRef);
+
+          if (ownerSnap.exists()) {
+            setOwnerDetails(ownerSnap.data());
+          }
+        } catch (error) {
+          console.error("Error fetching owner details:", error);
+        }
+      }
+    };
+
+    fetchOwnerDetails();
+  }, [petDetails?.ownerId]);
+
+  useEffect(() => {
+    const fetchFavoriteStatus = async () => {
+      try {
+        if (!user?.id) return;
+        const userRef = doc(db, "users", user.id);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          const favorites = userSnap.data().favorites || [];
+          setLiked(favorites.includes(petId));
+        }
+      } catch (error) {
+        console.error("Error fetching user favorites:", error);
+      }
+    };
+
+    if (user?.id && petId) {
+      fetchFavoriteStatus();
+    }
+  }, [user?.id, petId]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#2BBFFF" />
+        <Text>Loading your pet...</Text>
+      </View>
+    );
+  }
+
+  const animateHeart = async () => {
     Animated.sequence([
       Animated.timing(scale, {
         toValue: 1.4,
@@ -50,16 +146,44 @@ export default function PetDetail() {
       }),
     ]).start();
 
-    setLiked(!liked);
+    const updatedLiked = !liked;
+    setLiked(updatedLiked);
+    try {
+      if (!user?.id) {
+        return;
+      }
+      const userRef = doc(db, "users", user?.id);
+      await updateDoc(userRef, {
+        favorites: updatedLiked ? arrayUnion(petId) : arrayRemove(petId),
+      });
+
+      const updatedDocSnap = await getDoc(userRef);
+      if (updatedDocSnap.exists()) {
+        const updatedData = updatedDocSnap.data();
+      }
+    } catch (error) {
+      console.error("Failed to update favorites:", error);
+      setLiked(!updatedLiked);
+    }
+  };
+
+  const handleChatNavigation = () => {
+    if (!petDetails?.ownerId) return;
+    const ids = [user?.id, petDetails.ownerId].sort();
+    const newChatId = `${ids[0]}_${ids[1]}`;
+    setChatId(newChatId);
+    router.push({
+      pathname: "/(chat)/[chat]",
+      params: { chat: newChatId },
+    });
   };
 
   const infoData = [
-    { title: "Gender", value: "Male" },
-    { title: "Age", value: "1.5 years" },
-    { title: "Breed", value: "Persian" },
-    { title: "Eye Color", value: "Grey" },
+    { title: "Gender", value: petDetails?.gender },
+    { title: "Age", value: petDetails?.age + " years" },
+    { title: "Breed", value: petDetails?.breed.join(", ") },
+    { title: "Eye Color", value: petDetails?.eyeColor },
   ];
-
   return (
     <View style={styles.container}>
       <View style={styles.innerContainer}>
@@ -96,22 +220,32 @@ export default function PetDetail() {
         </View>
 
         <View style={styles.coverflow}>
-          <CoverFlowCarousel images={Images} />
+          <CoverFlowCarousel images={petDetails?.image || []} />
         </View>
 
         <View style={styles.infoSection}>
           <View style={styles.innerInfoSection}>
-            <Text style={styles.title}>Smokey </Text>
+            <Text style={styles.title}>{petDetails?.name} </Text>
             <HugeiconsIcon icon={Share08Icon} size={20} color="black" />
           </View>
-          <Text style={styles.subTitle}>
-            74/6 Wellington St, East Mellbourne
-          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              const latitude = ownerDetails?.latitude;
+              const longitude = ownerDetails?.longitude;
+
+              if (latitude && longitude) {
+                const url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+                Linking.openURL(url);
+              }
+            }}
+          >
+            <Text style={styles.subTitle}>{ownerDetails?.address}</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.scrollContainer}>
           <ScrollView
-            contentContainerStyle={{ flexGrow: 1 }}
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
             showsVerticalScrollIndicator={false}
           >
             <ScrollView
@@ -119,30 +253,48 @@ export default function PetDetail() {
               showsHorizontalScrollIndicator={false}
               style={styles.infoBoxWrapper}
             >
-              {infoData.map((item, index) => (
-                <View key={index} style={styles.infoBox}>
-                  <Text style={styles.infoTitle}>{item.title}</Text>
-                  <Text style={styles.infoSubtitle}>{item.value}</Text>
-                </View>
-              ))}
+              {infoData.map((item, index) => {
+                if (!item.value) return null; // Skip if value is empty or falsy
+
+                return (
+                  <View key={index} style={styles.infoBox}>
+                    <Text style={styles.infoTitle}>{item.title}</Text>
+                    <Text style={styles.infoSubtitle}>{item.value}</Text>
+                  </View>
+                );
+              })}
             </ScrollView>
 
-            <Pressable style={styles.ownerBox} onPress={() => router.push('./ownerDetails')}>
+            <Pressable
+              style={styles.ownerBox}
+              onPress={() =>
+                router.push({
+                  pathname: "./ownerDetails",
+                  params: { ownerId: petDetails?.ownerId },
+                })
+              }
+            >
               <View>
                 <Image
-                  source={require("../../assets/images/user1.png")}
+                  source={{ uri: ownerDetails?.profilePicUrl }}
                   style={styles.ownerImage}
                 />
               </View>
               <View style={styles.ownerTextWrapper}>
-                <Text style={styles.ownerName}>Waqas Ahmed</Text>
+                {ownerDetails && (
+                  <Text style={styles.ownerName}>
+                    {ownerDetails.organizationName
+                      ? ownerDetails.organizationName
+                      : `${ownerDetails.firstName} ${ownerDetails.lastName}`}
+                  </Text>
+                )}
                 <Text style={styles.ownerRole}>Pet Owner</Text>
               </View>
               <View style={styles.contactIcons}>
-                <TouchableOpacity style={styles.contactIconButton}>
-                  <HugeiconsIcon icon={Call02Icon} size={20} color="black" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.contactIconButton}>
+                <TouchableOpacity
+                  style={styles.contactIconButton}
+                  onPress={handleChatNavigation}
+                >
                   <HugeiconsIcon icon={Comment01Icon} size={20} color="black" />
                 </TouchableOpacity>
               </View>
@@ -151,12 +303,7 @@ export default function PetDetail() {
             <View style={styles.aboutSection}>
               <Text style={styles.aboutTitle}>About</Text>
               <Text style={styles.aboutDescription}>
-                Persian cats, known for their luxurious long fur, round faces,
-                and gentle personalities, are one of the most beloved and
-                recognizable breeds in the world. Originating from Persia
-                (modern-day Iran), these cats have been admired for centuries
-                and continue to captivate cat enthusiasts with their distinctive
-                appearance and sweet demeanor.
+                {petDetails?.description}
               </Text>
             </View>
           </ScrollView>
@@ -164,9 +311,20 @@ export default function PetDetail() {
         <View style={styles.footerBox}>
           <View>
             <Text style={styles.priceLabel}>Price</Text>
-            <Text style={styles.priceValue}>Rs 5000</Text>
+            <Text style={styles.priceValue}>Rs {petDetails?.price}</Text>
           </View>
-          <TouchableOpacity style={styles.adoptButton} onPress={() => router.push("/(others)/payment")}>
+          <TouchableOpacity
+            style={styles.adoptButton}
+            onPress={() =>
+              router.push({
+                pathname: "/(others)/payment",
+                params: {
+                  petId,
+                  ownerId: petDetails?.ownerId,
+                },
+              })
+            }
+          >
             <Text style={styles.adoptText}>Adopt Me</Text>
           </TouchableOpacity>
         </View>
@@ -191,7 +349,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    marginTop: 50,
+    marginTop: Platform.OS === "ios" ? 70 : 20,
     marginBottom: 20,
   },
   coverflow: {
@@ -209,7 +367,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   navText: {
-    fontSize: 22,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     fontWeight: "600",
     color: "#000",
     position: "absolute",
@@ -220,11 +379,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     width: "100%",
     marginBottom: "155%",
-    // paddingBottom: 20,
-    //marginTop: 10,
-    // backgroundColor:"pink"
   },
-
   imageContainer: {
     width: 304,
     height: 300,
@@ -234,7 +389,6 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     width: "95%",
     marginBottom: 20,
-    //backgroundColor:"pink"
   },
   innerInfoSection: {
     flexDirection: "row",
@@ -244,38 +398,40 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   title: {
-    fontSize: 20,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(19) : responsive.fontSize(16),
     fontWeight: "500",
   },
   subTitle: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     color: "#939393",
     fontWeight: "400",
   },
   infoBoxWrapper: {
     width: "100%",
     marginBottom: 20,
-    //backgroundColor:"pink"
   },
   infoBox: {
-    // flexDirection: "column",
     justifyContent: "space-between",
     borderWidth: 1,
     borderColor: "#DCDCDC",
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 20,
-    width: 90,
+    minWidth: 90,
     marginRight: 12,
   },
   infoTitle: {
     color: "gray",
-    fontSize: 12,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(9),
     fontWeight: "400",
   },
   infoSubtitle: {
     fontWeight: "500",
-    fontSize: 14,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     marginTop: 4,
   },
   ownerBox: {
@@ -300,11 +456,13 @@ const styles = StyleSheet.create({
   },
   ownerName: {
     fontWeight: "600",
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
   },
   ownerRole: {
     color: "gray",
-    fontSize: 14,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
   },
   contactIcons: {
     flexDirection: "row",
@@ -317,19 +475,19 @@ const styles = StyleSheet.create({
   },
   aboutSection: {
     marginTop: 5,
-    marginBottom: 10,
     width: "95%",
     alignSelf: "center",
   },
   aboutTitle: {
     fontWeight: "600",
-    fontSize: 18,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
   },
   aboutDescription: {
     color: "gray",
     marginTop: 4,
-    fontSize: 13,
-    marginBottom: 60,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     lineHeight: 20,
   },
   footerBox: {
@@ -351,14 +509,16 @@ const styles = StyleSheet.create({
   },
   priceLabel: {
     color: "gray",
-    fontSize: 12,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(9),
     fontWeight: "300",
     paddingLeft: 25,
   },
   priceValue: {
     color: "white",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     paddingLeft: 25,
   },
   adoptButton: {
@@ -368,7 +528,8 @@ const styles = StyleSheet.create({
     borderRadius: 50,
   },
   adoptText: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
   },
 });

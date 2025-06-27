@@ -11,7 +11,7 @@ import {
   TextInput,
   Keyboard,
   Alert,
-  SafeAreaView,
+  Platform,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -21,26 +21,129 @@ import CountryPicker, {
 } from "react-native-country-picker-modal";
 import DropDownPicker from "react-native-dropdown-picker";
 import * as ImagePicker from "expo-image-picker";
+import { useAppContext, UserData } from "@/hooks/AppContext";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { db } from "../../config/firebaseConfig";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { useAuth } from "@clerk/clerk-expo";
+import { uploadImage } from "../../config/uploadImage";
+import responsive from "@/constants/Responsive";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
+  const { userId } = useAuth();
   const navigation = useNavigation();
   const dismissKeyboard = () => Keyboard.dismiss();
+  const parsePhoneDetails = (phone: string | undefined) => {
+    if (!phone) {
+      return {
+        phoneNumber: "",
+        countryCode: "US",
+        callingCode: "1",
+      };
+    }
+    const phoneNumberObj = parsePhoneNumberFromString(phone);
+    if (phoneNumberObj) {
+      return {
+        phoneNumber: phoneNumberObj.nationalNumber,
+        countryCode: phoneNumberObj.country,
+        callingCode: phoneNumberObj.countryCallingCode,
+      };
+    } else {
+      return {
+        phoneNumber: "",
+        countryCode: "US",
+        callingCode: "1",
+      };
+    }
+  };
 
+  const updateUserProfile = async (params: {
+    userId: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    countryCode: string;
+    callingCode: string;
+    gender: string;
+  }): Promise<
+    { success: true; data: UserData } | { success: false; error: string }
+  > => {
+    try {
+      const {
+        userId,
+        firstName,
+        lastName,
+        email,
+        phoneNumber,
+        countryCode,
+        callingCode,
+        gender,
+      } = params;
+
+      const userDocRef = doc(db, "users", userId);
+
+      await updateDoc(userDocRef, {
+        firstName,
+        lastName,
+        email,
+        phone: `+${callingCode}${phoneNumber}`,
+        countryCode,
+        callingCode,
+        gender,
+        updatedAt: new Date().toISOString(),
+      });
+
+      const updatedSnap = await getDoc(userDocRef);
+
+      if (!updatedSnap.exists()) {
+        throw new Error("Document not found after update");
+      }
+
+      const updatedData = updatedSnap.data() as UserData;
+      return { success: true, data: updatedData };
+    } catch (error: any) {
+      const errorMessage = error.message || "Unknown error occurred";
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  async function onImagePicked(localUri: string) {
+    if (!userId) return Alert.alert("Error", "No user ID found.");
+
+    try {
+      const ext = localUri.split(".").pop();
+      const filename = `profilePics/${userId}-${Date.now()}.${ext}`;
+
+      const publicUrl = await uploadImage("user-documents", filename, localUri);
+
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, { profilePicUrl: publicUrl });
+
+      updateUserData({ ...userData!, profilePicUrl: publicUrl });
+    } catch (e) {
+      Alert.alert("Upload failed", "Please try again.");
+    }
+  }
+
+  const { userData, fetchUserData, updateUserData } = useAppContext();
+  const parsedPhone = parsePhoneDetails(userData?.phone);
   const [initialUser, setInitialUser] = useState({
-    firstName: "Waqas",
-    lastName: "Ahmed",
-    email: "waqasahmed@gmail.com",
-    phoneNumber: "3147544535",
-    gender: "male",
-    cnic: "32304-9995584-3",
-    countryCode: "PK",
-    callingCode: "92",
+    firstName: userData?.firstName,
+    lastName: userData?.lastName,
+    email: userData?.email,
+    phoneNumber: parsedPhone.phoneNumber,
+    gender: userData?.gender,
+    cnic: userData?.cnicNumber,
+    countryCode: userData?.countryCode,
+    callingCode: userData?.callingCode,
   });
 
   const [user, setUser] = useState(initialUser);
 
-  const [countryCode, setCountryCode] = useState<CountryCode>("PK"); // Default to Pakistan
-  const [callingCode, setCallingCode] = useState<string>("92"); // Default calling code
+  const [countryCode, setCountryCode] = useState<CountryCode>("PK");
+  const [callingCode, setCallingCode] = useState<string>("92");
   const [visible, setVisible] = useState<boolean>(false);
   const [open, setOpen] = useState(false);
   const [gender, setGender] = useState(user.gender);
@@ -49,6 +152,13 @@ export default function ProfileScreen() {
     { label: "Female", value: "female" },
     { label: "Others", value: "others" },
   ]);
+
+  useEffect(() => {
+    if (userData?.countryCode && userData.callingCode) {
+      setCountryCode(userData.countryCode as CountryCode);
+      setCallingCode(userData.callingCode);
+    }
+  }, []);
 
   // Validation functions
   const validateEmail = (email: string) =>
@@ -59,7 +169,7 @@ export default function ProfileScreen() {
   const [isUpdated, setIsUpdated] = useState(false);
 
   useEffect(() => {
-    const emailValid = validateEmail(user.email);
+    const emailValid = validateEmail(user.email || "");
     const phoneValid = validatePhoneNumber(user.phoneNumber);
 
     const firstNameChanged = user.firstName !== initialUser.firstName;
@@ -115,6 +225,7 @@ export default function ProfileScreen() {
 
     if (!result.canceled) {
       setProfileImage(result.assets[0].uri); // Update profile picture
+      onImagePicked(result.assets[0].uri);
     }
   };
 
@@ -129,15 +240,35 @@ export default function ProfileScreen() {
 
     if (!result.canceled) {
       setProfileImage(result.assets[0].uri); // Update profile picture
+      onImagePicked(result.assets[0].uri);
     }
   };
+  
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showKeyboard = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideKeyboard = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showKeyboard.remove();
+      hideKeyboard.remove();
+    };
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
         <StatusBar barStyle="dark-content" />
         <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ zIndex: 10 }}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ zIndex: 10 }}
+          >
             <MaterialIcons name="arrow-back-ios-new" size={16} color="black" />
           </TouchableOpacity>
           <Text style={styles.navText}>My Profile</Text>
@@ -145,11 +276,7 @@ export default function ProfileScreen() {
 
         <View style={styles.profileContainer}>
           <Image
-            source={
-              profileImage
-                ? { uri: profileImage }
-                : require("../../assets/images/avatar.png")
-            }
+            source={{ uri: userData?.profilePicUrl }}
             style={styles.avatar}
           />
 
@@ -226,8 +353,8 @@ export default function ProfileScreen() {
                     withModal={true}
                     countryCode={countryCode}
                     onSelect={(country: Country) => {
-                      setCountryCode((country?.cca2 as CountryCode) || "PK");
-                      setCallingCode(country?.callingCode[0] || "92");
+                      setCountryCode(country?.cca2 as CountryCode);
+                      setCallingCode(country?.callingCode[0]);
                       setVisible(false);
                       setIsUpdated(true);
                     }}
@@ -253,20 +380,21 @@ export default function ProfileScreen() {
               <DropDownPicker
                 listMode="SCROLLVIEW"
                 open={open}
-                value={gender}
+                value={gender ?? null}
                 items={items}
                 setOpen={setOpen}
                 setValue={setGender}
                 onChangeValue={() => {
-                  setIsUpdated(true); // Mark the form as updated
+                  setIsUpdated(true);
                 }}
                 setItems={setItems}
                 style={styles.dropdown}
                 dropDownContainerStyle={styles.dropdownContainer}
-                containerStyle={{ marginBottom: open ? 160 : 15 }} // Push UI down when open
+                containerStyle={{ marginBottom: open ? 160 : 15 }}
                 dropDownDirection="BOTTOM"
+                textStyle={styles.dropdownText}
               />
-              <View style={{marginBottom: 50}}>
+              <View style={{ marginBottom: 80 }}>
                 <View style={styles.textContainer}>
                   <Text style={styles.inputHeader}>CNIC Number</Text>
                 </View>
@@ -288,18 +416,51 @@ export default function ProfileScreen() {
           </TouchableWithoutFeedback>
         </View>
 
-        {isUpdated && (
+        {isUpdated  && !isKeyboardVisible && (
           <View style={styles.bottomContainer}>
             <TouchableOpacity
               style={styles.continueButton}
-              onPress={() => {
+              onPress={async () => {
                 Keyboard.dismiss();
-                setUser((prevUser) => {
-                  const updatedUser = { ...prevUser, gender };
-                  setInitialUser(updatedUser); // Update initialUser
-                  return updatedUser;
-                });
                 setIsUpdated(false);
+                const updatedUser = { ...user, gender };
+
+                if (!userId) {
+                  throw new Error("No user ID found. User must be logged in.");
+                } else {
+                  const result = await updateUserProfile({
+                    userId: userId,
+                    firstName: updatedUser.firstName || "",
+                    lastName: updatedUser.lastName || "",
+                    email: updatedUser.email || "",
+                    phoneNumber: updatedUser.phoneNumber,
+                    countryCode,
+                    callingCode,
+                    gender: gender || "others",
+                  });
+
+                  if (result.success && result.data) {
+                    const parsed = parsePhoneDetails(result.data.phone);
+
+                    const updatedUser = {
+                      firstName: result.data.firstName,
+                      lastName: result.data.lastName,
+                      email: result.data.email,
+                      phoneNumber: parsed.phoneNumber,
+                      gender: result.data.gender,
+                      cnic: result.data.cnicNumber,
+                      countryCode: countryCode,
+                      callingCode: callingCode,
+                    };
+
+                    setUser(updatedUser);
+                    setInitialUser(updatedUser);
+                    setCountryCode(countryCode as CountryCode); 
+                    setCallingCode(callingCode);
+                    setIsUpdated(false); 
+                    await fetchUserData();
+                  }
+                }
               }}
             >
               <Text style={styles.continueText}>Save</Text>
@@ -326,13 +487,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    marginTop: 20,
+    marginTop: Platform.OS === "ios" ? 30 : 20,
     marginBottom: 40,
   },
   navText: {
-    fontSize: 24,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     fontWeight: "500",
-    color: "#000",
     position: "absolute",
     textAlign: "center",
     left: 0,
@@ -371,10 +532,11 @@ const styles = StyleSheet.create({
     marginBottom: "65%",
   },
   textContainer: {
-    width: "100%", // Ensures full width
+    width: "100%", 
   },
   inputHeader: {
-    fontSize: 14,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     marginBottom: 5,
     fontWeight: 400,
     marginLeft: 5,
@@ -386,7 +548,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderColor: "#d3d3d3",
     backgroundColor: "#fff",
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     marginBottom: 15,
   },
   InputContainer: {
@@ -406,34 +569,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   callingCode: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
   },
   phoneNumberInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     marginLeft: 5,
-  },
-  mobileNumber: {
-    color: "#2BBFFF",
-    fontSize: 16,
-    marginTop: 15,
   },
   dropdown: {
     borderWidth: 1,
     borderColor: "#d3d3d3",
     borderRadius: 8,
-    paddingHorizontal: 10, // Padding inside the dropdown box
+    paddingHorizontal: 10,
     paddingVertical: 8,
+  },
+  dropdownText: {
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
   },
   dropdownContainer: {
     borderWidth: 1,
     borderColor: "#d3d3d3",
     borderRadius: 8,
-    padding: 10, // Padding inside the dropdown options container
+    padding: 10,
   },
   bottomContainer: {
     position: "absolute",
-    bottom: 0, // Change to 50 if needed
+    bottom: 30,
     width: "100%",
   },
   continueButton: {
@@ -450,7 +614,8 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
   },
 });

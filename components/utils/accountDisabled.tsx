@@ -1,3 +1,4 @@
+import responsive from "@/constants/Responsive";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -8,6 +9,7 @@ import {
     Animated,
     Dimensions,
     Image,
+    Platform,
   } from "react-native";
   
   
@@ -20,25 +22,24 @@ import {
     const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
     useEffect(() => {
       Animated.timing(slideAnim, {
-        toValue: 0, // Animate the modal to position 0 (visible)
+        toValue: 0, 
         duration: 300,
         useNativeDriver: true,
       }).start();
-    }, [slideAnim]); // Only runs when the component mounts
+    }, [slideAnim]); 
   
-    // When the modal closes, we animate it to slide down
+    
     const handleClose = (callback: () => void) => {
       Animated.timing(slideAnim, {
-        toValue: screenHeight * 0.9, // Move the modal out of the screen (down)
+        toValue: screenHeight * 0.9, 
         duration: 300,
         useNativeDriver: true,
       }).start(() => {
-        closeModal(); // Close the modal after animation
+        closeModal();
   
-        // Add a delay before navigating
         setTimeout(() => {
-          callback(); // Then execute the callback (navigation)
-        }, 50); // Delay in milliseconds (500ms here, you can adjust as needed)
+          callback(); 
+        }, 50); 
       });
     };
 
@@ -79,18 +80,17 @@ import {
       alignItems: "center",
       paddingBottom: 20,
       paddingTop:80,
-      // gap: 20,
     },
     title: {
       marginTop: 20,
       marginBottom: 5,
-      fontSize: 26,
+      fontSize: Platform.OS === "ios" ? responsive.fontSize(25) : responsive.fontSize(20),
       fontWeight: "500",
       width: "85%",
     },
     subTitle: {
       width: "85%",
-      fontSize: 16,
+      fontSize: Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
       color: "#939393",
       marginBottom: 20, 
     },
@@ -103,11 +103,11 @@ import {
     buttonsContainer: {
       flexDirection: "row-reverse",
       alignItems: "center",
-      width: "85%", // Ensures proper spacing
-      shadowColor: "#000", // Shadow color
-      shadowOffset: { width: 0, height: 4 }, // Moves shadow downwards
-      shadowOpacity: 0.05, // Adjust shadow visibility
-      shadowRadius: 4, // Blur effect for shadow
+      width: "85%",
+      shadowColor: "#000", 
+      shadowOffset: { width: 0, height: 4 }, 
+      shadowOpacity: 0.05, 
+      shadowRadius: 4,
       elevation: 1, // For Android shadow
     },
     closeButton: {
@@ -118,7 +118,7 @@ import {
       backgroundColor: "#2BBFFF",
     },
     closeText: {
-      fontSize: 16,
+      fontSize: Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
       color: "#fff",
       fontWeight: "700",
     },

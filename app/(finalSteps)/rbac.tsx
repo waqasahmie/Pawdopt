@@ -11,21 +11,54 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
+import { useUser } from "@clerk/clerk-expo";
+import { useAppContext } from "../../hooks/AppContext";
+import responsive from "@/constants/Responsive";
 
 export default function RBAC() {
   const navigation = useNavigation();
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const { user } = useUser();
+  const { updateRegistrationData } = useAppContext();
+  const { updateUserData } = useAppContext();
 
-  const handleRoleSelection = (role: string) => {
-    setSelectedRole(role); // Update selected role state
-    
+  const handleRoleSelection = async (role: string) => {
+    updateUserData({
+      animalType: null,
+      backCNIC: "",
+      cnicNumber: "",
+      email: "",
+      favoriteBreeds: [],
+      firstName: "",
+      frontCNIC: null,
+      gender: "",
+      lastName: "",
+      phone: "",
+      role: null,
+      profilePicUrl: "",
+      organizationName: "",
+      longitude: 0,
+      latitude: 0,
+      address: "",
+      callingCode: "",
+      countryCode: ""
+    });
+    setSelectedRole(role);
+
+    const clerkUserId = user?.id;
+
+    if (!clerkUserId) {
+      return;
+    }
+
+    updateRegistrationData("role", role);
+
+    // Navigate to next screen based on role
     if (role === "Veterinarian") {
-    // Navigate to a different screen if the role is 'Veterinarian'
-    router.push(`/(finalSteps)/vet?role=${role}`);
-  } else {
-    // Navigate to the default screen for other roles
-    router.push(`/(finalSteps)/findMatch?role=${role}`);
-  }
+      router.push(`/(finalSteps)/vet?role=${role}`);
+    } else {
+      router.push(`/(finalSteps)/findMatch?role=${role}`);
+    }
   };
 
   return (
@@ -47,7 +80,7 @@ export default function RBAC() {
             <View style={styles.progressBar} />
           </View>
 
-          <Text style={{ fontSize: 16, color: "#939393" }}>1/4</Text>
+          <Text style={styles.pageIndicator}>1/4</Text>
         </View>
 
         {/* Top Left Background Image */}
@@ -73,18 +106,30 @@ export default function RBAC() {
         </View>
 
         {/* Role Buttons */}
-        <TouchableOpacity style={styles.roleButton} onPress={() => handleRoleSelection("Adopter")}>
+        <TouchableOpacity
+          style={styles.roleButton}
+          onPress={() => handleRoleSelection("Adopter")}
+        >
           <Text style={styles.roleText}>Pet Adopter</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.roleButton} onPress={() => handleRoleSelection("Owner")}>
+        <TouchableOpacity
+          style={styles.roleButton}
+          onPress={() => handleRoleSelection("Owner")}
+        >
           <Text style={styles.roleText}>Pet Owner</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.roleButton} onPress={() => handleRoleSelection("Organization")}>
+        <TouchableOpacity
+          style={styles.roleButton}
+          onPress={() => handleRoleSelection("Organization")}
+        >
           <Text style={styles.roleText}>Organization</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.roleButton} onPress={() => handleRoleSelection("Veterinarian")}>
+        <TouchableOpacity
+          style={styles.roleButton}
+          onPress={() => handleRoleSelection("Veterinarian")}
+        >
           <Text style={styles.roleText}>Veterinarian</Text>
         </TouchableOpacity>
       </View>
@@ -102,14 +147,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     paddingHorizontal: 20,
-    paddingVertical: 50,
   },
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between", // Back button left & email right
+    justifyContent: "space-between",
     width: "100%",
-    marginTop: Platform.OS === "ios" ? 0 : -20,
+    marginTop: Platform.OS === "ios" ? 70 : 20,
   },
   topLeftImage: {
     position: "absolute",
@@ -117,7 +161,6 @@ const styles = StyleSheet.create({
     left: 0,
     width: "90%",
     height: "40%",
-    resizeMode: "contain",
   },
   bottomRightImage: {
     position: "absolute",
@@ -125,31 +168,37 @@ const styles = StyleSheet.create({
     right: 0,
     width: "96%",
     height: "49%",
-    resizeMode: "contain",
   },
   textContainer: {
-    width: "100%", // Ensures full width
+    width: "100%",
+  },
+  pageIndicator: {
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
+    color: "#939393",
   },
   title: {
-    fontSize: 30,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(29) : responsive.fontSize(23),
     fontWeight: "600",
     color: "#000",
     marginTop: 40,
     marginBottom: 10,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     color: "#939393",
     marginBottom: 30,
-    lineHeight: 24, // 1.5 times the font size (16 * 1.5)
+    lineHeight: Platform.OS === "ios" ? 24 : 20,
   },
   progressBarContainer: {
-    flexDirection: "row", // new
+    flexDirection: "row",
     width: "70%",
     height: 8,
     backgroundColor: "#E0E0E0",
     borderRadius: 4,
-    overflow: "hidden", // Ensures the border radius is applied correctly
+    overflow: "hidden",
   },
   progressBar: {
     width: "25%",
@@ -167,14 +216,15 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     marginBottom: 15,
     marginVertical: 5,
-    shadowColor: "#000", // Shadow color
-    shadowOffset: { width: 0, height: 4 }, // Moves shadow downwards
-    shadowOpacity: 0.1, // Adjust shadow visibility
-    shadowRadius: 4, // Blur effect for shadow
+    shadowColor: "#000", 
+    shadowOffset: { width: 0, height: 4 }, 
+    shadowOpacity: 0.1,
+    shadowRadius: 4, 
     elevation: 3, // For Android shadow
   },
   roleText: {
-    fontSize: 18,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     fontWeight: "600",
     color: "#2BBFFF",
   },

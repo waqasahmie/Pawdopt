@@ -5,21 +5,23 @@ import {
     View,
     Animated,
     Image,
+    Platform,
   } from "react-native";
   import React, { useRef, useState } from "react";
   import Toast from '../../components/utils/toast';
+import responsive from "@/constants/Responsive";
   
   const initialAccounts = [
     {
       name: "Google",
       icon: require("../../assets/images/GoogleBS.png"),
-      connected: true,
+      connected: false,
       size: { width: 38, height: 38 },
     },
     {
       name: "Apple",
       icon: require("../../assets/images/Apple.png"),
-      connected: true,
+      connected: false,
       size: { width: 37, height: 44 },
     },
     {
@@ -40,14 +42,6 @@ import {
     const [accountStatus, setAccountStatus] = useState(initialAccounts);
     const toastRef = useRef<any>({});
 
-    // const handleToggle = (index: number) => {
-    //   setAccountStatus((prevAccounts) =>
-    //     prevAccounts.map((account, i) =>
-    //       i === index ? { ...account, connected: !account.connected } : account
-    //     )
-    //   );
-    // };
-  
     const handleToggle = (index: number) => {
       setAccountStatus((prevAccounts) =>
         prevAccounts.map((account, i) => {
@@ -107,7 +101,7 @@ import {
     title: {
       marginTop: 20,
       marginBottom: 10,
-      fontSize: 26,
+      fontSize: Platform.OS === "ios" ? responsive.fontSize(25) : responsive.fontSize(20),
       fontWeight: "600",
     },
     accountRow: {
@@ -130,17 +124,20 @@ import {
     },
     accountName: {
       flex: 1,
-      fontSize: 18,
+      fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
       fontWeight: "500",
     },
     disconnectText: {
       color: "#FF0900",
-      fontSize: 14,
+      fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
       right: 5,
     },
     connectText: {
       color: "#2BBFFF",
-      fontSize: 14,
+      fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
       right: 5,
     },
   });

@@ -1,4 +1,3 @@
-// components/CustomHeader.tsx
 import React, { useEffect, useRef, useState } from "react";
 import {
   View,
@@ -8,8 +7,8 @@ import {
   Image,
   Platform,
   Animated,
+  TouchableOpacity,
 } from "react-native";
-import { ms, vs } from "react-native-size-matters"; // assuming you're using this
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import {
   Notification03Icon,
@@ -18,10 +17,19 @@ import {
 } from "@hugeicons/core-free-icons";
 import { router } from "expo-router";
 import { Easing } from "react-native-reanimated";
+import { useUser } from "@clerk/clerk-expo";
+import { useAppContext } from "@/hooks/AppContext";
+import responsive from "@/constants/Responsive";
 
 const CustomHeader = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const { user } = useUser();
   const exploreTextTranslateX = useRef(new Animated.Value(0)).current;
+  const emailUsername =
+    user?.primaryEmailAddress?.emailAddress?.split("@")[0] || "there";
+  const { userData } = useAppContext();
+  const firstName = userData?.firstName ?? "there";
+
   useEffect(() => {
     const shake = Animated.loop(
       Animated.sequence([
@@ -61,7 +69,7 @@ const CustomHeader = () => {
 
     shake.start();
 
-    return () => shake.stop(); // cleanup on unmount
+    return () => shake.stop();
   }, []);
 
   return (
@@ -69,36 +77,34 @@ const CustomHeader = () => {
       <View style={styles.leftSection}>
         <View style={styles.greeting}>
           <Text style={styles.greetingText}>Hey, </Text>
-          <Text style={styles.username}>Waqas!</Text>
+          <Text style={styles.username}>{firstName}!</Text>
         </View>
         <Image
           source={require("../../assets/images/Pawprint.png")}
           style={styles.paw}
         />
       </View>
-
       <View style={styles.centerSection}>
-        <TextInput
-          placeholder="Persian Cat"
-          returnKeyType="search"
-          style={styles.searchInput}
-          placeholderTextColor="#939393"
-          value={searchTerm}
-          onChangeText={setSearchTerm}
-        />
-        <View style={styles.searchIconContainer}>
-          <HugeiconsIcon
-            icon={Search01Icon}
-            size={ms(19)}
-            style={styles.searchIcon}
+        <TouchableOpacity onPress={() => router.push("./(others)/search")}>
+          <TextInput
+            placeholder="Persian Cat"
+            returnKeyType="search"
+            style={styles.searchInput}
+            placeholderTextColor="#939393"
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            editable={false}
           />
-        </View>
+          <View style={styles.searchIconContainer}>
+            <HugeiconsIcon icon={Search01Icon} size={18} />
+          </View>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.rightSection}>
         <HugeiconsIcon
           icon={Stethoscope02Icon}
-          size={ms(22)}
+          size={22}
           onPress={() => router.push("./(vet)")}
         />
         <Animated.Text
@@ -114,7 +120,7 @@ const CustomHeader = () => {
 
         <HugeiconsIcon
           icon={Notification03Icon}
-          size={ms(22)}
+          size={22}
           onPress={() => router.push("./(others)/notifications")}
         />
       </View>
@@ -126,7 +132,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 50 : 40,
+    paddingTop: Platform.OS === "ios" ? 50 : 20,
     paddingBottom: 10,
     paddingHorizontal: 16,
     backgroundColor: "#fff",
@@ -136,18 +142,21 @@ const styles = StyleSheet.create({
   leftSection: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: Platform.OS === "ios" ? 6 : 0,
+
   },
   greeting: {
     flexDirection: "column",
   },
   greetingText: {
-    fontSize: 14,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     fontWeight: "400",
     color: "#ACACAC",
   },
   username: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "400",
   },
   paw: {
@@ -161,23 +170,19 @@ const styles = StyleSheet.create({
   },
   searchIconContainer: {
     position: "absolute",
-    right: 12,
+    right: 14,
     top: 10,
   },
   searchInput: {
-    height: ms(40),
-    fontSize: Platform.OS === "ios" ? ms(15) : ms(13),
+    height: 40,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     borderRadius: 50,
     borderWidth: 1,
     borderColor: "#dcdcdc",
-    paddingVertical: vs(10),
-    paddingLeft: ms(20),
-    paddingRight: ms(40),
-  },
-  searchIcon: {
-    position: "absolute",
-    right: 10,
-    top: 10,
+    paddingVertical: 10,
+    paddingLeft: 20,
+    paddingRight: 40,
   },
   rightSection: {
     flexDirection: "row",
@@ -185,7 +190,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   exploreText: {
-    fontSize: 8,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(7) : responsive.fontSize(6),
     backgroundColor: "#2bbfff",
     borderRadius: 10,
     paddingHorizontal: 8,
@@ -193,8 +199,8 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontWeight: "600",
     position: "absolute",
-    right: 18, // wherever you want
-    top: 30, // wherever you want
+    right: 18, 
+    top: 30, 
     alignSelf: "center",
   },
 });

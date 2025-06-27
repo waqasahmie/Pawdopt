@@ -7,15 +7,17 @@ import {
   Image,
   Dimensions,
   Alert,
+  Platform,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { FontAwesome6 } from "@expo/vector-icons";
+import { useAppContext } from "../../hooks/AppContext"; 
+import responsive from "@/constants/Responsive";
 
 type PetImagesProps = {
-  //closeModal: () => void;
-  onCloseAndOpenModal?: () => void; // NEW
-  direction?: "vertical" | "horizontal"; // <-- NEW
+  onCloseAndOpenModal?: () => void; 
+  direction?: "vertical" | "horizontal"; 
 };
 
 const screenHeight = Dimensions.get("window").height;
@@ -23,12 +25,22 @@ const screenHeight = Dimensions.get("window").height;
 const MAX_IMAGES = 5;
 
 export const PetImages = ({ onCloseAndOpenModal, direction = "vertical" }: PetImagesProps) => {
+  const { updatePetListingData ,petListingData} = useAppContext();
   const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
-
-  const [images, setImages] = useState<(string | null)[]>(
-    Array(MAX_IMAGES).fill(null)
-  );
   const [imageCount, setImageCount] = useState(0); // Track the number of uploaded images
+  const [image, setImages] = useState<(string | null)[]>(() => {
+    const initialImages = Array(MAX_IMAGES).fill(null);
+    
+    if (petListingData.image && petListingData.image.length > 0) {
+      // Fill with existing images from context
+      petListingData.image.slice(0, MAX_IMAGES).forEach((uri, index) => {
+        initialImages[index] = uri;
+      });
+      setImageCount(5);
+    }
+    
+    return initialImages;
+  });
 
   const handleImagePicker = (index: number) => {
     Alert.alert("Upload Image", "Choose an option", [
@@ -37,6 +49,7 @@ export const PetImages = ({ onCloseAndOpenModal, direction = "vertical" }: PetIm
       { text: "Cancel", style: "cancel" },
     ]);
   };
+
 
   const openCamera = async (index: number) => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -70,7 +83,7 @@ export const PetImages = ({ onCloseAndOpenModal, direction = "vertical" }: PetIm
   };
 
   const updateImage = (index: number, uri: string) => {
-    const updated = [...images];
+    const updated = [...image];
     updated[index] = uri;
     setImages(updated);
     setImageCount(updated.filter((image) => image !== null).length); // Update the image count
@@ -78,22 +91,23 @@ export const PetImages = ({ onCloseAndOpenModal, direction = "vertical" }: PetIm
 
   useEffect(() => {
     Animated.timing(slideAnim, {
-      toValue: 0, // Animate the modal to position 0 (visible)
+      toValue: 0, 
       duration: 300,
       useNativeDriver: true,
     }).start();
   }, [slideAnim]);
 
   const [fadeAnim] = useState(new Animated.Value(1));
-  // When the modal closes, we animate it to slide down
+
   const handleContinue = () => {
-    // Trigger fade out
+    const nonNullImages = image.filter((img): img is string => img !== null);
+
+    updatePetListingData('image', nonNullImages);
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 200,
       useNativeDriver: true,
     }).start(() => {
-      //closeModal(); // Call the closeModal prop to close the modal after animation
       onCloseAndOpenModal && onCloseAndOpenModal();
     });
   };
@@ -116,7 +130,7 @@ export const PetImages = ({ onCloseAndOpenModal, direction = "vertical" }: PetIm
       <Text style={styles.subTitle}>Upload images of your pet below.</Text>
 
       <View style={styles.gridContainer}>
-        {images.map((uri, index) => (
+        {image.map((uri, index) => (
           <TouchableOpacity
             key={index}
             style={styles.imageBox}
@@ -143,7 +157,7 @@ export const PetImages = ({ onCloseAndOpenModal, direction = "vertical" }: PetIm
             { backgroundColor: imageCount === MAX_IMAGES ? "#2BBFFF" : "#ccc" },
           ]}
           onPress={handleContinue}
-          disabled={imageCount !== MAX_IMAGES} // Disable button if not 5 images
+          disabled={imageCount !== MAX_IMAGES} 
         >
           <Text style={styles.ContinueText}>Continue</Text>
         </TouchableOpacity>
@@ -170,12 +184,14 @@ const styles = StyleSheet.create({
   title: {
     marginTop: 40,
     marginBottom: 5,
-    fontSize: 20,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(19) : responsive.fontSize(16),
     fontWeight: "700",
     width: "90%",
   },
   subTitle: {
-    fontSize: 14,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     color: "#939393",
     fontWeight: "500",
     width: "90%",
@@ -190,8 +206,8 @@ const styles = StyleSheet.create({
     marginBottom: 50,
   },
   imageBox: {
-    width: 95,
-    height: 75,
+    width: Platform.OS === "ios" ? 95 : 85,
+    height: Platform.OS === "ios" ? 75 : 65,
     backgroundColor: "#FDFDFD",
     borderRadius: 15,
     borderWidth: 1,
@@ -224,7 +240,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#2BBFFF",
   },
   ContinueText: {
-    fontSize: 18,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     color: "#fff",
     fontWeight: "700",
   },

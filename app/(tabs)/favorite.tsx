@@ -10,179 +10,122 @@ import {
   TouchableOpacity,
   Platform,
   Animated,
-  SafeAreaView,
+  FlatList,
+  RefreshControl,
 } from "react-native";
-import { s, vs, ms } from "react-native-size-matters";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../config/firebaseConfig";
+import { useUser } from "@clerk/clerk-expo";
+import { useRouter } from "expo-router";
+import { useAppContext } from "@/hooks/AppContext";
+import responsive from "@/constants/Responsive";
+import Toast from "@/components/utils/toast";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const width = 336;
-const BANNER_HEIGHT = 140;
+type Pet = {
+  id: string;
+  name: string;
+  category: string;
+  gender: string;
+  breed: string;
+  image: string[];
+  longitude: 0;
+  latitude: 0;
+};
 
-const allPets = [
-  {
-    id: 1,
-    breed: "Maine Coon",
-    name: "Smokey",
-    category: "Cats",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "1.7km Away",
-    image: require("../../assets/images/mainecoon.jpg"),
-  },
-  {
-    id: 2,
-    breed: "Macaw",
-    name: "Lily",
-    category: "Parrots",
-    gender: "Female",
-    size: { width: 14, height: 16 },
-    distance: "3.2km Away",
-    image: require("../../assets/images/macaw.jpg"),
-  },
-  {
-    id: 3,
-    breed: "Golden Ret.",
-    name: "Lucy",
-    category: "Dogs",
-    gender: "Female",
-    size: { width: 14, height: 16 },
-    distance: "1.3km Away",
-    image: require("../../assets/images/goldenretriever.jpg"),
-  },
-  {
-    id: 4,
-    breed: "British Short.",
-    name: "Raya",
-    category: "Cats",
-    gender: "Female",
-    size: { width: 14, height: 16 },
-    distance: "2.9km Away",
-    image: require("../../assets/images/britishshorthair.jpg"),
-  },
-  {
-    id: 5,
-    breed: "Cockatoo",
-    name: "Smiley",
-    category: "Parrots",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "2.8km Away",
-    image: require("../../assets/images/cockatoo.jpg"),
-  },
-  {
-    id: 6,
-    breed: "Ragdoll",
-    name: "Leo",
-    category: "Cats",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "2.6km Away",
-    image: require("../../assets/images/ragdoll.jpg"),
-  },
-  {
-    id: 7,
-    breed: "Samoyed",
-    name: "Frosty",
-    category: "Dogs",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "3.1km Away",
-    image: require("../../assets/images/samoyed.jpg"),
-  },
-  {
-    id: 8,
-    breed: "African Grey",
-    name: "Gizmo",
-    category: "Parrots",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "1.9km Away",
-    image: require("../../assets/images/africangrey.jpg"),
-  },
-  {
-    id: 9,
-    breed: "Siberian L.",
-    name: "Mila",
-    category: "Cats",
-    gender: "Female",
-    size: { width: 14, height: 16 },
-    distance: "2.8km Away",
-    image: require("../../assets/images/siberian.jpg"),
-  },
-  {
-    id: 10,
-    breed: "Labrador R.",
-    name: "Daisy",
-    category: "Dogs",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "2.6km Away",
-    image: require("../../assets/images/labrador.jpg"),
-  },
-  {
-    id: 11,
-    breed: "M. Cockatoo",
-    name: "Candy",
-    category: "Parrots",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "2.6km Away",
-    image: require("../../assets/images/mcockatoo.jpg"),
-  },
-  {
-    id: 12,
-    breed: "German Sh.",
-    name: "Bruno",
-    category: "Dogs",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "1.8km Away",
-    image: require("../../assets/images/german.jpg"),
-  },
-  {
-    id: 13,
-    breed: "Sun Conure",
-    name: "Cane",
-    category: "Parrots",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "1.7km Away",
-    image: require("../../assets/images/sunconure.jpg"),
-  },
-  {
-    id: 14,
-    breed: "Persian",
-    name: "Abby",
-    category: "Cats",
-    gender: "Female",
-    size: { width: 14, height: 16 },
-    distance: "3.8km Away",
-    image: require("../../assets/images/persian.jpg"),
-  },
-  {
-    id: 15,
-    breed: "Husky",
-    name: "Snowy",
-    category: "Dogs",
-    gender: "Female",
-    size: { width: 14, height: 16 },
-    distance: "2.8km Away",
-    image: require("../../assets/images/husky.jpg"),
-  },
-];
+const normalizeCategory = (type: string) => {
+  if (type === "Cat") return "Cats";
+  if (type === "Dog") return "Dogs";
+  if (type === "Parrot") return "Parrots";
+  return type;
+};
 
 export default function FavoriteScreen() {
   const [selectedCategory, setSelectedCategory] = useState("All");
-
+  const { user } = useUser();
+  const [favoritePetIds, setFavoritePetIds] = useState<Pet[]>([]);
+  const router = useRouter();
+  const { userData } = useAppContext();
+  const [refreshing, setRefreshing] = useState(false);
   const categories = ["All", "Cats", "Dogs", "Parrots"];
-
+  const toastRef = useRef<any>({});
   const pillAnim = useRef(new Animated.Value(0)).current;
   const pillWidth = useRef(new Animated.Value(0)).current;
   const categoryRefs = useRef<{ [key: string]: View | null }>({});
 
+  
   const filteredPets =
     selectedCategory === "All"
-      ? allPets
-      : allPets.filter((pet) => pet.category === selectedCategory);
+      ? favoritePetIds
+      : favoritePetIds.filter((pet) => pet.category === selectedCategory);
+
+
+    const fetchFavorites = async () => {
+      if (!user?.id) {
+        return;
+      }
+
+      try {
+        const userRef = doc(db, "users", user.id);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          const favoriteIds: string[] = data?.favorites || [];
+
+          if (favoriteIds.length === 0) {
+            setFavoritePetIds([]);
+            return;
+          }
+
+          const petDocsPromises = favoriteIds.map(async (petId) => {
+            return await getDoc(doc(db, "petlistings", petId));
+          });
+
+          const petDocs = await Promise.all(petDocsPromises);
+          petDocs.forEach((doc, i) => {
+            console.log(
+              `📄 Pet document ${i}: ID = ${doc.id}, Exists = ${doc.exists()}`
+            );
+          });
+          const favoritePets = petDocs
+            .filter((doc) => doc.exists())
+            .map((doc) => {
+              const petData = doc.data();
+              return {
+                id: doc.id,
+                name: petData.name,
+                breed: petData.breed,
+                category: normalizeCategory(petData.category),
+                gender: petData.gender,
+                image: Array.isArray(petData.image)
+                  ? petData.image
+                  : [petData.image],
+                longitude: petData.longitude,
+                latitude: petData.latitude,
+              };
+            });
+
+          setFavoritePetIds(favoritePets);
+        }
+      } catch (err) {
+        toastRef.current.show({
+          type: "error",
+          title: "Oops! Something Went Wrong",
+          description: "Couldn’t load favorites.",
+        });
+      }
+    };
+
+    useEffect(() => {
+      fetchFavorites();
+    }, [user]);
+  
+    const onRefresh = async () => {
+      setRefreshing(true);
+      await fetchFavorites();
+      setRefreshing(false);
+    };
 
   useEffect(() => {
     if (categoryRefs.current[selectedCategory]) {
@@ -190,14 +133,14 @@ export default function FavoriteScreen() {
         Animated.parallel([
           Animated.spring(pillAnim, {
             toValue: x,
-            stiffness: 150,      // lower = softer spring
-            damping: 20,  
+            stiffness: 150,
+            damping: 20,
             useNativeDriver: false,
           }),
           Animated.spring(pillWidth, {
             toValue: width,
-            stiffness: 150,      // lower = softer spring
-            damping: 20,  
+            stiffness: 150, // lower = softer spring
+            damping: 20,
             useNativeDriver: false,
           }),
         ]).start();
@@ -205,17 +148,103 @@ export default function FavoriteScreen() {
     }
   }, [selectedCategory]);
 
+  const getDistanceFromLatLonInKm = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ) => {
+    const R = 6371; // Radius of Earth in KM
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+    return parseFloat(distance.toFixed(1));
+  };
+
+  const filteredNearbyPets = filteredPets.filter((pet) => {
+    const petLat = Number(pet.latitude);
+    const petLon = Number(pet.longitude);
+    const userLat = Number(userData?.latitude);
+    const userLon = Number(userData?.longitude);
+
+    if (!userLat || !userLon || !petLat || !petLon) return false;
+
+    const distance = getDistanceFromLatLonInKm(
+      userLat,
+      userLon,
+      petLat,
+      petLon
+    );
+    return distance <= 30;
+  });
+
+  const renderPetItem = ({ item }: { item: any }) => {
+    const pet = item;
+    const petLat = Number(pet.latitude);
+    const petLon = Number(pet.longitude);
+    const userLat = Number(userData?.latitude);
+    const userLon = Number(userData?.longitude);
+
+    const distance =
+      userLat && userLon && petLat && petLon
+        ? getDistanceFromLatLonInKm(userLat, userLon, petLat, petLon)
+        : null;
+
+    return (
+      <TouchableOpacity
+        key={pet.id}
+        style={styles.petCard}
+        onPress={() => router.push(`/petDetail?petId=${pet.id}`)}
+      >
+        <Image source={{ uri: pet.image[0] }} style={styles.petImage} />
+        <View style={styles.petInfo}>
+          <Text style={styles.breedText}>{pet.breed}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={styles.nameText}>{pet.name}</Text>
+            <View style={styles.gender}>
+              {pet.gender === "Female" ? (
+                <HugeiconsIcon
+                  icon={FemaleSymbolIcon}
+                  size={16}
+                  color="#2BBFFF"
+                  strokeWidth={2.5}
+                />
+              ) : pet.gender === "Male" ? (
+                <HugeiconsIcon
+                  icon={MaleSymbolIcon}
+                  size={16}
+                  color="#2BBFFF"
+                  strokeWidth={2.5}
+                />
+              ) : null}
+            </View>
+          </View>
+          <Text style={styles.distanceText}>
+            {distance != null
+              ? `${distance.toFixed(1)} km away`
+              : "Distance unavailable"}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
-      <View style={styles.headerContainer}>
-          <Text style={{ fontSize: 22, fontWeight: 500 }}>
-            Favorite Pets
-          </Text>
+        <View style={styles.headerContainer}>
+          <Text style={{ fontSize: 22, fontWeight: 500 }}>Favorite Pets</Text>
         </View>
 
         <View style={styles.categories}>
-          {/* 🔧 Animated background pill */}
+          {/* Animated background pill */}
           <Animated.View
             style={[
               styles.activeCategory,
@@ -242,34 +271,27 @@ export default function FavoriteScreen() {
           ))}
         </View>
 
-        <View style={styles.scrollContainer}>
-          <ScrollView
-            contentContainerStyle={{ flexGrow: 1 }}
-            showsVerticalScrollIndicator={false}
-          >
-            {filteredPets.map((pet) => (
-              <View key={pet.id} style={styles.petCard}>
-              <Image source={pet.image} style={styles.petImage} />
-              <View style={styles.petInfo}>
-                <Text style={styles.breedText}>{pet.breed}</Text>
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text style={styles.nameText}>{pet.name}</Text>
-                  <View style={styles.gender}>
-                    {pet.gender === "Female" ? (
-                      <HugeiconsIcon icon={FemaleSymbolIcon} size={ms(16)} color="#2BBFFF" strokeWidth={2.5}/>
-                    ) : pet.gender === "Male" ? (
-                      <HugeiconsIcon icon={MaleSymbolIcon} size={ms(16)} color="#2BBFFF" strokeWidth={2.5}/>
-                    ) : null}
-                  </View>
-                </View>
-                <Text style={styles.distanceText}>{pet.distance}</Text>
-              </View>
-            </View>
-            ))}
+        <FlatList
+          data={filteredNearbyPets}
+          keyExtractor={(item) => item.id}
+          renderItem={renderPetItem}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 80 }}
+          ListFooterComponent={
             <Text style={styles.note}>Looks like you've reached the end!</Text>
-          </ScrollView>
-        </View>
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#2bbfff"
+              colors={["#2bbfff"]}
+              progressBackgroundColor="#f2fbff"
+            />
+          }
+        />
       </View>
+      <Toast ref={toastRef} />
     </SafeAreaView>
   );
 }
@@ -282,7 +304,7 @@ const styles = StyleSheet.create({
   innerContainer: {
     flex: 1,
     justifyContent: "flex-start",
-    paddingHorizontal: s(20),
+    paddingHorizontal: 20,
     gap: 20,
   },
   headerContainer: {
@@ -290,97 +312,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
-    marginTop: vs(5),
-    marginBottom: vs(10),
-    // marginTop: Platform.OS === "ios" ? 50 : 20,
+    marginBottom: 10,
+    paddingTop: Platform.OS === "ios" ? 30 : 20,
   },
   scrollContainer: {
     width: "100%",
     marginBottom: Platform.OS === "ios" ? "50%" : "70%",
   },
-  greetingContainer: {
-    flexDirection: "row",
-  },
-  greeting: {
-    flexDirection: "column",
-  },
-  greetingText: {
-    fontSize: 14,
-    fontWeight: "400",
-    color: "#acacac",
-  },
-  username: {
-    fontSize: 16,
-    fontWeight: "400",
-  },
-  paw: {
-    width: 20,
-    height: 20,
-    right: 8,
-  },
-  searchContainer: {
-    width: "50%",
-    justifyContent: "center",
-  },
-  searchInput: {
-    height: ms(40),
-    fontSize: Platform.OS === "ios" ? ms(15) : ms(12),
-    borderRadius: 50,
-    borderWidth: 1,
-    borderColor: "#dcdcdc",
-    paddingVertical: vs(10),
-    paddingLeft: ms(20),
-    paddingRight: ms(40),
-  },
-  searchIcon: {
-    position: "absolute",
-    right: 10,
-    color: "#000",
-  },
-  iconRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  icon: {
-    width: 40,
-    height: 40,
-  },
-  wrapper: {
-    width: width,
-    height: BANNER_HEIGHT,
-    borderRadius: 26,
-    overflow: "hidden",
-    alignSelf: "center",
-    position: "relative",
-    backgroundColor: "#eee",
-    marginTop: 20,
-  },
-  bannerImage: {
-    width: width,
-    height: BANNER_HEIGHT,
-    resizeMode: "cover",
-    position: "absolute",
-    top: 0,
-    left: 0,
-  },
-  paginationContainer: {
-    position: "absolute",
-    bottom: 4,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  dot: {
-    height: 6,
-    borderRadius: 10,
-    marginHorizontal: 4,
-  },
   title: {
-    fontSize: 22,
-    fontWeight: "600",
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
+    fontWeight: 500,
   },
   categories: {
     flexDirection: "row",
@@ -396,7 +338,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 50,
-    // backgroundColor:"pink",
   },
   activeCategory: {
     alignSelf: "center",
@@ -408,41 +349,43 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     color: "#000",
-    fontSize: 14,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(12),
     fontWeight: "500",
   },
   activeCategoryText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(12),
     fontWeight: "500",
   },
   petCard: {
     flexDirection: "row",
-    marginBottom: ms(25),
-    marginTop: ms(2),
-    padding: ms(6),
+    marginBottom: 25,
+    marginTop: 2,
+    padding: 6,
     borderRadius: 20,
     backgroundColor: "#fff",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: vs(4) },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   petImage: {
-    width: ms(145),
-    height: ms(170),
-
+    width: 145,
+    height: 170,
     borderRadius: 14,
   },
   petInfo: {
-    paddingHorizontal: s(15),
-    paddingVertical: vs(10),
+    paddingHorizontal: 15,
+    paddingVertical: 10,
     flex: 1,
   },
   breedText: {
     fontFamily: "JUST Sans Outline ExBold",
-    fontSize: Platform.OS === "ios" ? ms(26) : ms(21),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(26) : responsive.fontSize(20),
     fontWeight: "600",
     color: "#D4D4D4",
   },
@@ -451,26 +394,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   nameText: {
-    fontSize: Platform.OS === "ios" ? ms(17) : ms(14),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     color: "#ACACAC",
-    marginTop: ms(5),
+    marginTop: 5,
   },
   gender: {
-    marginTop: ms(7),
-    marginLeft: ms(6),
+    marginTop: 7,
+    marginLeft: 6,
   },
   distanceText: {
-    fontSize: Platform.OS === "ios" ? ms(11) : ms(8),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(8),
     color: "#ACACAC",
     position: "absolute",
     bottom: 1,
     right: 10,
   },
   note: {
-    fontSize: Platform.OS === "ios" ? ms(11) : ms(8),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(8),
     fontWeight: "400",
     alignSelf: "center",
     color: "#ACACAC",
-    marginBottom: ms(25),
+    marginBottom: 25,
   },
 });

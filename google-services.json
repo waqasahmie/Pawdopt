@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "704600565706",
+    "firebase_url": "https://pawdopt-20eb1-default-rtdb.firebaseio.com",
+    "project_id": "pawdopt-20eb1",
+    "storage_bucket": "pawdopt-20eb1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:704600565706:android:4d1568b40713b8d2881133",
+        "android_client_info": {
+          "package_name": "com.waqasahmie.pawdopt"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClPpSmL0qFlLzX7BnVj44Xh81b1ghpHVo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

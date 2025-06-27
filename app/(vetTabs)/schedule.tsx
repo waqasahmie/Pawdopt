@@ -7,10 +7,14 @@ import {
   Image,
   ScrollView,
   StyleSheet,
+  Platform,
 } from "react-native";
 import dayjs from "dayjs";
 import { useAppContext } from "../../hooks/AppContext";
 import { router } from "expo-router";
+import responsive from "@/constants/Responsive";
+import { useUser } from "@clerk/clerk-expo";
+import { RefreshControl } from "react-native";
 
 const getNext7Days = () => {
   return [...Array(7).keys()].map((offset) => {
@@ -24,89 +28,146 @@ const getNext7Days = () => {
   });
 };
 
-const dummyBookings = [
-  {
-    id: "1",
-    name: "Aleysha Amir",
-    owner: "Dr Asad",
-    time: "2025-04-20T14:30:00",
-    image: "https://placedog.net/300/200?id=1",
-  },
-  {
-    id: "2",
-    name: "Faisal Awan",
-    owner: "Dr Saif",
-    time: "2025-04-20T11:00:00",
-    image: "https://placedog.net/300/200?id=2",
-  },
-  {
-    id: "3",
-    name: "Waqas Ahmed",
-    owner: "Dr Alizay",
-    time: "2025-04-22T16:00:00",
-    image: "https://placedog.net/300/200?id=3",
-  },
-  {
-    id: "4",
-    name: "Aleysha Amir",
-    owner: "Dr Asad",
-    time: "2025-04-21T14:30:00",
-    image: "https://placedog.net/300/200?id=1",
-  },
-  {
-    id: "5",
-    name: "Aleysha Amir",
-    owner: "Dr Asad",
-    time: "2025-04-22T14:30:00",
-    image: "https://placedog.net/300/200?id=1",
-  },
-  {
-    id: "6",
-    name: "Aleysha Amir",
-    owner: "Dr Asad",
-    time: "2025-04-15T14:30:00",
-    image: "https://placedog.net/300/200?id=1",
-  },
-  {
-    id: "7",
-    name: "Aleysha Amir",
-    owner: "Dr Asad",
-    time: "2025-04-15T14:30:00",
-    image: "https://placedog.net/300/200?id=1",
-  },
-];
-
 export default function ScheduleScreen() {
   const dateOptions = getNext7Days();
   const [selectedDate, setSelectedDate] = useState(dateOptions[0].fullDate);
-  const { statusMap, updateStatus } = useAppContext();
-  
+  const { fetchAppointments, appointments, statusMap, updateStatus, vetData } =
+    useAppContext();
 
- 
-  
-  // Filter bookings based on selected date
-  const filteredBookings = dummyBookings.filter(
-    (booking) => dayjs(booking.time).format("YYYY-MM-DD") === selectedDate && statusMap[booking.id] !== "cancelled"  
-  );
+  function formatTime(raw: string) {
+    const cleanedTime = raw.replace(/[\u202F\u00A0]/g, " ").trim();
+    const [timePart, period] = cleanedTime.split(" "); 
+    const timeWithoutSeconds = timePart.split(":").slice(0, 2).join(":");
+    const formattedTime = `${timeWithoutSeconds} ${period}`;
+    return formattedTime;
+  }
 
-  // Log statusMap whenever it updates
+  const { user } = useUser();
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    if (user?.id) {
+      fetchAppointments(user.id)
+        .then(() => setRefreshing(false))
+        .catch(() => setRefreshing(false));
+    } else {
+      setRefreshing(false);
+    }
+  }, [user]);
+
+  const filteredBookings = appointments
+    .filter((booking) => {
+      const status = booking.status;
+      return (
+        dayjs(booking.appointmentDate.toDate()).format("YYYY-MM-DD") ===
+          selectedDate &&
+        (status === "pending" || status === "confirmed")
+      );
+    })
+    .sort((a, b) => {
+      const datetimeA = dayjs(
+        `${dayjs(a.appointmentDate.toDate()).format("YYYY-MM-DD")} ${
+          a.appointmentTime
+        }`,
+        ["YYYY-MM-DD HH:mm:ss", "YYYY-MM-DD h:mm A"]
+      );
+      const datetimeB = dayjs(
+        `${dayjs(b.appointmentDate.toDate()).format("YYYY-MM-DD")} ${
+          b.appointmentTime
+        }`,
+        ["YYYY-MM-DD HH:mm:ss", "YYYY-MM-DD h:mm A"]
+      );
+      return datetimeA.isBefore(datetimeB) ? -1 : 1;
+    });
+
   useEffect(() => {
-    console.log("statusMap updated:", statusMap);
   }, [statusMap]);
+
+  const renderBookingItem = ({ item }: { item: any }) => {
+    const booking = item;
+    const status = booking.status;
+
+    return (
+      <View key={booking.id} style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Image source={{ uri: booking.picture }} style={styles.cardImage} />
+          <View style={styles.cardText}>
+            <Text style={styles.cardTitle}>{booking.name}</Text>
+          </View>
+          <Text
+            style={[
+              styles.statusBadge,
+              status === "pending" && styles.pending,
+              status === "confirmed" && styles.confirmed,
+              status === "cancelled" && styles.cancelled,
+              status === "completed" && styles.completed,
+            ]}
+          >
+            {status}
+          </Text>
+        </View>
+
+        <View style={styles.cardDetails}>
+          <Text style={styles.cardDetailText}>
+            👤 {vetData.title} {vetData.firstName}
+          </Text>
+          <Text style={styles.cardDetailText}>
+            ⏰ {formatTime(booking.appointmentTime)}
+          </Text>
+        </View>
+
+        {status === "pending" && (
+          <View style={styles.buttonGroup}>
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={() =>
+                updateStatus(booking.id, "confirmed", booking.patientId)
+              }
+            >
+              <Text style={styles.confirmButtonText}>Confirm</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() =>
+                updateStatus(booking.id, "cancelled", booking.patientId)
+              }
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {(status === "confirmed" || status === "completed") && (
+          <TouchableOpacity
+            style={styles.completeButton}
+            onPress={() => {
+              updateStatus(booking.id, "completed", booking.patientId);
+              router.push({
+                pathname: "/(others)/sendInvoice",
+                params: { bookingId: booking.id },
+              });
+            }}
+          >
+            <Text style={styles.confirmButtonText}>Mark as Complete</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.innerContainer}>
         <View style={{ marginHorizontal: 10, marginTop: 10 }}>
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={dateOptions}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.datePillsContainer}
-          renderItem={({ item }) => {
-            const isSelected = item.fullDate === selectedDate;
-            return (
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={dateOptions}
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={styles.datePillsContainer}
+            renderItem={({ item }) => {
+              const isSelected = item.fullDate === selectedDate;
+              return (
                 <TouchableOpacity
                   onPress={() => setSelectedDate(item.fullDate)}
                   style={[
@@ -131,94 +192,44 @@ export default function ScheduleScreen() {
                     {item.day}
                   </Text>
                 </TouchableOpacity>
-            );
-          }}
+              );
+            }}
           />
-          </View>
-          <View style={{ marginHorizontal: 20 }}>
-        {/* Appointments List */}
-        <ScrollView style={styles.cardsContainer}>
-          {filteredBookings.length === 0 ? (
+        </View>
+
+        <FlatList
+          data={filteredBookings}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderBookingItem}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.cardsContainer,
+            filteredBookings.length === 0 && {
+              flex: 1,
+            },
+          ]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#2bbfff"
+              colors={["#2bbfff"]}
+              progressBackgroundColor="#f2fbff"
+            />
+          }
+          ListFooterComponent={
+            filteredBookings.length > 0 ? (
+              <Text style={styles.note}>
+                Looks like you've reached the end!
+              </Text>
+            ) : null
+          }
+          ListEmptyComponent={
             <Text style={styles.noAppointmentsText}>
               No Appointments for this date
             </Text>
-          ) : (
-            filteredBookings.map((booking) => {
-              console.log("Rendering Booking:", booking.id);
-              console.log("Current Status Map:", statusMap);
-
-              const status = statusMap[booking.id] || "pending";
-              console.log("Status for Booking:", status);
-
-              return (
-                <View key={booking.id} style={styles.card}>
-                  <View style={styles.cardHeader}>
-                    <Image
-                      source={{ uri: booking.image }}
-                      style={styles.cardImage}
-                    />
-                    <View style={styles.cardText}>
-                      <Text style={styles.cardTitle}>{booking.name}</Text>
-                    </View>
-                    <Text
-                      style={[
-                        styles.statusBadge,
-                        status === "pending" && styles.pending,
-                        status === "confirmed" && styles.confirmed,
-                        status === "cancelled" && styles.cancelled,
-                        status === "completed" && styles.completed,
-                      ]}
-                    >
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
-                    </Text>
-                  </View>
-
-                  <View style={styles.cardDetails}>
-                    <Text style={styles.cardDetailText}>
-                      👤 {booking.owner}
-                    </Text>
-                    <Text style={styles.cardDetailText}>
-                      ⏰ {dayjs(booking.time).format("dddd, h:mm A")}
-                    </Text>
-                  </View>
-
-                  {status === "pending" && (
-                    <View style={styles.buttonGroup}>
-                      <TouchableOpacity
-                        style={styles.confirmButton}
-                        onPress={() => updateStatus(booking.id, "confirmed")}
-                      >
-                        <Text style={styles.confirmButtonText}>Confirm</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.cancelButton}
-                        onPress={() => updateStatus(booking.id, "cancelled")}
-                      >
-                        <Text style={styles.cancelButtonText}>Cancel</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
-                  {(status === "confirmed" || status === "completed") && (
-                    <TouchableOpacity
-                      style={styles.completeButton}
-                      onPress={() => {
-                        updateStatus(booking.id, "completed");
-                          router.push("/(others)/sendInvoice"); // replace with your actual screen name
-                        }}
-                      
-                    >
-                      <Text style={styles.confirmButtonText}>
-                        Mark as Complete
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              );
-            })
-          )}
-        </ScrollView>
-        </View>
+          }
+        />
       </View>
     </View>
   );
@@ -232,15 +243,13 @@ const styles = StyleSheet.create({
   innerContainer: {
     flex: 1,
     justifyContent: "flex-start",
-    //paddingHorizontal: 10,
-    //gap: 20,
   },
   datePillsContainer: {
     paddingBottom: 8,
   },
   datePill: {
     alignItems: "center",
-    padding: 10,
+    justifyContent: "center",
     borderRadius: 20,
     marginHorizontal: 6,
     width: 64,
@@ -250,15 +259,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#2bbfff",
   },
   unselectedPill: {
-    backgroundColor: "#dcdcdc",
+    borderWidth: 1,
+    borderColor: "#dcdcdc",
   },
   pillDateText: {
-    fontSize: 18,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     fontWeight: "bold",
     color: "#000",
   },
   pillDayText: {
-    fontSize: 13,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     color: "#939393",
   },
   selectedPillText: {
@@ -266,7 +278,8 @@ const styles = StyleSheet.create({
   },
   cardsContainer: {
     marginTop: 20,
-    marginBottom: 70,
+    paddingBottom: 70,
+    paddingHorizontal: 20,
   },
   card: {
     backgroundColor: "#fff",
@@ -289,14 +302,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    fontSize: 17,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     fontWeight: "600",
   },
-  cardSub: {
-    color: "#2bbfff",
-  },
   statusBadge: {
-    fontSize: 12,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(9),
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -324,6 +336,8 @@ const styles = StyleSheet.create({
   cardDetailText: {
     color: "#374151",
     marginBottom: 4,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
   },
   buttonGroup: {
     flexDirection: "row",
@@ -340,6 +354,8 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
     textAlign: "center",
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
   },
   cancelButton: {
     borderColor: "#d1d5db",
@@ -351,6 +367,8 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: "#374151",
     fontWeight: "600",
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
   },
   completeButton: {
     backgroundColor: "#2bbfff",
@@ -362,7 +380,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#6b7280",
     marginTop: 40,
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
   },
   modalContainer: {
     flex: 1,
@@ -414,5 +433,13 @@ const styles = StyleSheet.create({
     width: "100%",
     flexDirection: "row",
     justifyContent: "space-between",
+  },
+  note: {
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(8),
+    fontWeight: "400",
+    alignSelf: "center",
+    color: "#ACACAC",
+    marginBottom: 50,
   },
 });

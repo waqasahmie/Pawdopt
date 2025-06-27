@@ -1,7 +1,7 @@
-import { View, StyleSheet, LayoutChangeEvent } from "react-native";
+import { View, StyleSheet, LayoutChangeEvent, Keyboard, Platform } from "react-native";
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import VetTabBarButton from "./vetTabBarButton";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -11,6 +11,26 @@ import Animated, {
 export function VetTabBar({ state, navigation }: BottomTabBarProps) {
   const [dimensions, setDimensions] = useState({ height: 20, width: 100 });
   const buttonWidth = dimensions.width / state.routes.length - 6;
+
+
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+useEffect(() => {
+  const showSubscription = Keyboard.addListener(
+    Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+    () => setIsKeyboardVisible(true)
+  );
+  const hideSubscription = Keyboard.addListener(
+    Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+    () => setIsKeyboardVisible(false)
+  );
+
+  return () => {
+    showSubscription.remove();
+    hideSubscription.remove();
+  };
+}, []);
+
 
   const onTabbarLayout = (e: LayoutChangeEvent) => {
     setDimensions({
@@ -25,7 +45,7 @@ export function VetTabBar({ state, navigation }: BottomTabBarProps) {
       transform: [{ translateX: tabPositionX.value }],
     };
   });
-
+ if (isKeyboardVisible) return null; 
   return (
     <View onLayout={onTabbarLayout} style={styles.tabbar}>
       <Animated.View

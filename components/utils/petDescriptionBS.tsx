@@ -8,13 +8,16 @@ import {
   TextInput,
   Keyboard,
   TouchableWithoutFeedback,
+  Platform,
 } from "react-native";
 import React, { useEffect, useState } from "react";
+import { useAppContext } from "../../hooks/AppContext";
+import responsive from "@/constants/Responsive";
+
 
 type PetDescriptionProps = {
-  //closeModal: () => void;
-  onCloseAndOpenModal?: () => void; // NEW
-  direction?: "vertical" | "horizontal"; // <-- NEW
+  onCloseAndOpenModal?: () => void;
+  direction?: "vertical" | "horizontal"; 
 };
 
 const screenHeight = Dimensions.get("window").height;
@@ -25,7 +28,8 @@ export const PetDescription = ({
   direction = "vertical",
 }: PetDescriptionProps) => {
   const [slideAnim] = useState(new Animated.Value(screenHeight * 0.9));
-  const [description, setDescription] = useState("");
+  const { updatePetListingData,petListingData } = useAppContext();
+  const [description, setDescription] = useState(petListingData.description || "");
   const dismissKeyboard = () => Keyboard.dismiss();
 
   useEffect(() => {
@@ -37,34 +41,32 @@ export const PetDescription = ({
   }, [slideAnim]);
 
   const [fadeAnim] = useState(new Animated.Value(1));
-  // When the modal closes, we animate it to slide down
   const handleContinue = () => {
-    // Trigger fade out
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 200,
       useNativeDriver: true,
     }).start(() => {
-      //closeModal(); // Call the closeModal prop to close the modal after animation
+      updatePetListingData("description", description);
       onCloseAndOpenModal && onCloseAndOpenModal();
     });
   };
+
+  useEffect(() => {
+  }, []);
 
   const handleDescriptionChange = (text: string) => {
     const words = text.trim().split(/\s+/);
     const wordCount = text.trim() === "" ? 0 : words.length;
 
-    // Check if it's increasing (user is typing more)
     const isAdding = text.length > description.length;
 
     if (wordCount <= WORD_LIMIT) {
       setDescription(text);
     } else if (!isAdding) {
-      // Allow deleting/backspacing
       setDescription(text);
     } else {
-      // Block typing beyond 100 words
-      Keyboard.dismiss(); // optional: dismiss keyboard to show user input is blocked
+      Keyboard.dismiss(); 
     }
   };
 
@@ -121,10 +123,10 @@ export const PetDescription = ({
           <TouchableOpacity
             style={[
               styles.ContinueButton,
-              isDescriptionEmpty && { backgroundColor: "#ccc" }, // Change color when disabled
+              isDescriptionEmpty && { backgroundColor: "#ccc" }, 
             ]}
             onPress={handleContinue}
-            disabled={isDescriptionEmpty} // Disable button if description is empty
+            disabled={isDescriptionEmpty} 
           >
             <Text style={styles.ContinueText}>Continue</Text>
           </TouchableOpacity>
@@ -133,6 +135,7 @@ export const PetDescription = ({
     </TouchableWithoutFeedback>
   );
 };
+
 
 const styles = StyleSheet.create({
   indicator: {
@@ -152,19 +155,22 @@ const styles = StyleSheet.create({
   title: {
     marginTop: 40,
     marginBottom: 5,
-    fontSize: 20,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(19) : responsive.fontSize(16),
     fontWeight: "700",
     width: "90%",
   },
   subTitle: {
-    fontSize: 14,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     color: "#939393",
     fontWeight: "500",
     width: "90%",
     marginBottom: 30,
   },
   subSubTitle: {
-    fontSize: 12,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(9),
     fontWeight: "400",
     width: "90%",
     marginBottom: 5,
@@ -182,7 +188,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     textAlignVertical: "top",
-    fontSize: 12,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(9),
     fontWeight: "300",
   },
   wordCountContainer: {
@@ -192,7 +199,8 @@ const styles = StyleSheet.create({
   wordCountText: {
     position: "absolute",
     right: 12,
-    fontSize: 12,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(8),
     color: "#999",
   },
   buttonsContainer: {
@@ -215,7 +223,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#2BBFFF",
   },
   ContinueText: {
-    fontSize: 18,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     color: "#fff",
     fontWeight: "700",
   },

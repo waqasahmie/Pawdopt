@@ -1,205 +1,59 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, FlatList, StyleSheet, Image, ActivityIndicator, RefreshControl } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { HugeiconsIcon } from '@hugeicons/react-native';
-import { StarHalfIcon, StarIcon } from '@hugeicons/core-free-icons';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  Image,
+  ActivityIndicator,
+  RefreshControl,
+  Platform,
+} from "react-native";
+import { HugeiconsIcon } from "@hugeicons/react-native";
+import { StarHalfIcon, StarIcon } from "@hugeicons/core-free-icons";
 import LottieView from "lottie-react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "@clerk/clerk-expo";
+import {
+  getFirestore,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+} from "firebase/firestore";
+import { db } from "@/config/firebaseConfig";
+import dayjs from "dayjs";
+import responsive from "@/constants/Responsive";
 
-const reviews = [
-  {
-    id: "1",
-    name: "John Doe",
-    avatar: "https://i.pravatar.cc/100?img=1",
-    rating: 5,
-    comment: "Dr. Sarah was amazing and very helpful!",
-    date: "Apr 14, 2025",
-  },
-  {
-    id: "2",
-    name: "Ayesha Ali",
-    avatar: "https://i.pravatar.cc/100?img=2",
-    rating: 4,
-    comment: "Good service. My cat is healthy again!",
-    date: "Apr 12, 2025",
-  },
-  {
-    id: "3",
-    name: "Ali Raza",
-    avatar: "https://i.pravatar.cc/100?img=3",
-    rating: 3,
-    comment: "Waiting time was a bit too long, but staff was courteous.",
-    date: "Apr 11, 2025",
-  },
-  {
-    id: "4",
-    name: "Mehwish Tariq",
-    avatar: "https://i.pravatar.cc/100?img=4",
-    rating: 5,
-    comment: "Very professional and caring. Highly recommended!",
-    date: "Apr 10, 2025",
-  },
-  {
-    id: "5",
-    name: "Hamza Sheikh",
-    avatar: "https://i.pravatar.cc/100?img=5",
-    rating: 4,
-    comment: "Nice experience, the vet was very friendly.",
-    date: "Apr 09, 2025",
-  },
-  {
-    id: "6",
-    name: "Nida Akram",
-    avatar: "https://i.pravatar.cc/100?img=6",
-    rating: 2,
-    comment: "Clinic was overcrowded and noisy.",
-    date: "Apr 08, 2025",
-  },
-  {
-    id: "7",
-    name: "Zain Khan",
-    avatar: "https://i.pravatar.cc/100?img=7",
-    rating: 3,
-    comment: "It was okay, could be more organized.",
-    date: "Apr 07, 2025",
-  },
-  {
-    id: "8",
-    name: "Fatima Noor",
-    avatar: "https://i.pravatar.cc/100?img=8",
-    rating: 5,
-    comment: "My dog loves coming here!",
-    date: "Apr 06, 2025",
-  },
-  {
-    id: "9",
-    name: "Kashif Ahmed",
-    avatar: "https://i.pravatar.cc/100?img=9",
-    rating: 4,
-    comment: "Clean environment and friendly team.",
-    date: "Apr 05, 2025",
-  },
-  {
-    id: "10",
-    name: "Sana Javed",
-    avatar: "https://i.pravatar.cc/100?img=10",
-    rating: 3,
-    comment: "Average service, nothing exceptional.",
-    date: "Apr 04, 2025",
-  },
-  {
-    id: "11",
-    name: "Imran Butt",
-    avatar: "https://i.pravatar.cc/100?img=11",
-    rating: 1,
-    comment: "Extremely dissatisfied. Will not come back.",
-    date: "Apr 03, 2025",
-  },
-  {
-    id: "12",
-    name: "Rabia Hussain",
-    avatar: "https://i.pravatar.cc/100?img=12",
-    rating: 4,
-    comment: "Very cooperative staff and timely care.",
-    date: "Apr 02, 2025",
-  },
-  {
-    id: "13",
-    name: "Ahmed Tariq",
-    avatar: "https://i.pravatar.cc/100?img=13",
-    rating: 5,
-    comment: "Outstanding experience. Loved the professionalism!",
-    date: "Apr 01, 2025",
-  },
-  {
-    id: "14",
-    name: "Zoya Malik",
-    avatar: "https://i.pravatar.cc/100?img=14",
-    rating: 4,
-    comment: "Easy to get appointments. Friendly environment.",
-    date: "Mar 31, 2025",
-  },
-  {
-    id: "15",
-    name: "Taha Siddiqui",
-    avatar: "https://i.pravatar.cc/100?img=15",
-    rating: 2,
-    comment: "The staff wasn't very attentive.",
-    date: "Mar 30, 2025",
-  },
-  {
-    id: "16",
-    name: "Hira Naveed",
-    avatar: "https://i.pravatar.cc/100?img=16",
-    rating: 3,
-    comment: "Good but I expected better follow-up.",
-    date: "Mar 29, 2025",
-  },
-  {
-    id: "17",
-    name: "Rameez Raja",
-    avatar: "https://i.pravatar.cc/100?img=17",
-    rating: 5,
-    comment: "The best clinic for pets. They truly care!",
-    date: "Mar 28, 2025",
-  },
-  {
-    id: "18",
-    name: "Mariam Shah",
-    avatar: "https://i.pravatar.cc/100?img=18",
-    rating: 3,
-    comment: "I had to wait a lot despite having an appointment.",
-    date: "Mar 27, 2025",
-  },
-  {
-    id: "19",
-    name: "Omar Zubair",
-    avatar: "https://i.pravatar.cc/100?img=19",
-    rating: 4,
-    comment: "Helpful doctor, but the clinic was a bit hard to find.",
-    date: "Mar 26, 2025",
-  },
-  {
-    id: "20",
-    name: "Sadia Qureshi",
-    avatar: "https://i.pravatar.cc/100?img=20",
-    rating: 2,
-    comment: "Wasn't satisfied with the treatment approach.",
-    date: "Mar 25, 2025",
-  },
-  {
-    id: "21",
-    name: "Hassan Mir",
-    avatar: "https://i.pravatar.cc/100?img=21",
-    rating: 5,
-    comment: "Awesome experience. Will come back for sure!",
-    date: "Mar 24, 2025",
-  },
-  {
-    id: "22",
-    name: "Laiba Rafiq",
-    avatar: "https://i.pravatar.cc/100?img=22",
-    rating: 4,
-    comment: "They treated my rabbit with great care. Thanks!",
-    date: "Mar 23, 2025",
-  },
-];
+interface Review {
+  id: string;
+  userId: string;
+  rating: number;
+  comment: string;
+  createdAt: Date;
+  user?: { firstName: string; lastName: string; profilePicUrl: string };
+}
 
+interface DisplayReview {
+  id: string;
+  name: string;
+  avatar: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
 
 const LottieLoader = () => {
   return (
     <LottieView
-      source={require('../../components/utils/animation/reviews_refresh.json')} // Replace with your Lottie animation file path
+      source={require("../../components/utils/animation/reviews_refresh.json")}
       autoPlay
       loop
       style={styles.lottieLoader}
     />
   );
 };
-
-const averageRating = (
-  reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-).toFixed(1);
 
 const StarRating = ({ rating }: { rating: number }) => {
   const fullStars = Math.floor(rating);
@@ -220,7 +74,7 @@ const StarRating = ({ rating }: { rating: number }) => {
             width={16}
             height={16}
             style={{ marginRight: 2 }}
-            color = "#2BBFFF"
+            color="#2BBFFF"
             fill={fill}
           />
         );
@@ -229,7 +83,7 @@ const StarRating = ({ rating }: { rating: number }) => {
   );
 };
 
-const ReviewCard = ({ review }: { review: typeof reviews[0] }) => (
+const ReviewCard = ({ review }: { review: DisplayReview }) => (
   <View style={styles.card}>
     <View style={styles.header}>
       <Image source={{ uri: review.avatar }} style={styles.avatar} />
@@ -244,32 +98,78 @@ const ReviewCard = ({ review }: { review: typeof reviews[0] }) => (
 );
 
 export default function VetReviewsScreen() {
-  const [currentReviews, setCurrentReviews] = useState(reviews.slice(0, 6)); // Load first 3 reviews
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [liveReviews, setLiveReviews] = useState<Review[]>([]);
+  const [currentReviews, setCurrentReviews] = useState(reviews.slice(0, 6));
+  const { userId } = useAuth();
+  const totalReviews = liveReviews.length;
+  const averageRating =
+    totalReviews > 0
+      ? (
+          liveReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+        ).toFixed(1)
+      : "0.0";
+  useEffect(() => {
+    const fetchReviewsWithUser = async () => {
+      if (!userId) return;
+      setLoading(true);
 
-  const loadMoreReviews = () => {
-    if (loading || currentReviews.length === reviews.length) return; // Prevent loading if all reviews are loaded
+      const ratingsRef = collection(db, "reviews", userId, "ratings");
+      const q = query(ratingsRef, orderBy("createdAt", "desc"));
+      const snap = await getDocs(q);
 
-    setLoading(true);
-    setTimeout(() => {
-      const newReviews = reviews.slice(page * 6, (page + 1) * 6);
-      setCurrentReviews((prevReviews) => [...prevReviews, ...newReviews]);
-      setPage((prevPage) => prevPage + 1);
+      const raw: Review[] = snap.docs.map((d) => ({
+        id: d.id,
+        userId: d.data().userId,
+        rating: d.data().rating,
+        comment: d.data().comment,
+        createdAt: d.data().createdAt.toDate(),
+      }));
+
+      const uniqueUserIds = Array.from(new Set(raw.map((r) => r.userId)));
+      const userFetches = uniqueUserIds.map((uid) =>
+        getDoc(doc(db, "users", uid))
+      );
+      const userSnaps = await Promise.all(userFetches);
+
+      const userMap: Record<
+        string,
+        { firstName: string; lastName: string; profilePicUrl: string }
+      > = {};
+      userSnaps.forEach((usnap) => {
+        if (usnap.exists()) {
+          const data = usnap.data();
+          userMap[usnap.id] = {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            profilePicUrl: data.profilePicUrl,
+          };
+        }
+      });
+
+      const enriched = raw.map((r) => ({
+        ...r,
+        user: userMap[r.userId],
+      }));
+
+      setLiveReviews(enriched);
       setLoading(false);
-    }, 900); // Simulate network delay
-  };
+    };
+
+    fetchReviewsWithUser();
+  }, [userId]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setTimeout(() => {
-      // Add the newest reviews to the top of the list
       const newReviews = reviews.slice(0, 6);
       setCurrentReviews(newReviews);
       setPage(1);
       setRefreshing(false);
-    }, 1500); // Simulate refresh delay
+    }, 1500);
   }, []);
 
   const renderFooter = () => {
@@ -282,48 +182,44 @@ export default function VetReviewsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      
+    <View style={styles.container}>
       <View style={styles.statsRow}>
         <Text style={styles.avgRating}>{averageRating}</Text>
         <StarRating rating={Math.round(Number(averageRating))} />
-        <Text style={styles.totalReviews}>({reviews.length} reviews)</Text>
+        <Text style={styles.totalReviews}>({totalReviews} reviews)</Text>
       </View>
 
       <FlatList
-        data={currentReviews}
+        data={liveReviews}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ReviewCard review={item} />}
+        renderItem={({ item }) => (
+          <ReviewCard
+            review={{
+              id: item.id,
+              name: `${item.user?.firstName} ${item.user?.lastName}`,
+              avatar: item.user?.profilePicUrl ?? "",
+              rating: item.rating,
+              comment: item.comment,
+              date: dayjs(item.createdAt).format("MMM D, YYYY"),
+            }}
+          />
+        )}
+        contentContainerStyle={{ paddingBottom: 90 }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 24 }}
-        onEndReached={loadMoreReviews} // Trigger loadMoreReviews when scrolled to the bottom
-        onEndReachedThreshold={0.5} // 50% of the list before it triggers the function
-        // refreshing={refreshing}
-        // onRefresh={onRefresh}
+        onEndReachedThreshold={0.5}
         ListHeaderComponent={refreshing ? <LottieLoader /> : null}
-        ListFooterComponent={renderFooter} // Custom footer to show "No More Reviews"
-        
-        // refreshControl={
-        //   <RefreshControl
-        //     refreshing={refreshing}
-        //     onRefresh={onRefresh}
-        //     colors={["#2BBFFF"]}
-        //     progressBackgroundColor="#FAFAFA"
-        //     tintColor="#2BBFFF"
-        //   />
-        // }
-
+        ListFooterComponent={renderFooter}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="transparent" // hides native spinner (iOS)
-            colors={["transparent"]} // hides native spinner (Android)
+            tintColor="transparent"
+            colors={["transparent"]}
             progressBackgroundColor="transparent"
           />
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -333,25 +229,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     paddingHorizontal: 20,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: "700",
-    marginBottom: 8,
-    color: "#222",
-  },
   statsRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     marginBottom: 20,
+    marginTop: 20,
   },
   avgRating: {
-    fontSize: 20,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(19) : responsive.fontSize(16),
     fontWeight: "600",
     color: "#2BBFFF",
   },
   totalReviews: {
-    fontSize: 14,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     color: "#666",
   },
   lottieLoader: {
@@ -385,26 +276,29 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   name: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
     color: "#333",
   },
   date: {
-    fontSize: 12,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(9),
     color: "#999",
   },
   comment: {
-    fontSize: 14,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     color: "#444",
     lineHeight: 20,
     marginTop: 4,
   },
   noMoreReviews: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "500",
     color: "#999",
     textAlign: "center",
-    paddingVertical: 16,
-    marginBottom: 40,
+    paddingVertical: 12,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { 
   View, Text, TextInput, TouchableOpacity, Image, StyleSheet, StatusBar, 
   Keyboard, TouchableWithoutFeedback,
@@ -9,6 +9,12 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from "expo-router";
 import Animated, { FadeOut } from "react-native-reanimated";
 import PasswordStrengthMeter from "@/components/utils/PasswordStrengthMeter";
+import { useSignIn, useAuth } from "@clerk/clerk-expo";
+import { useRouter } from "expo-router";
+import { useClerk } from "@clerk/clerk-expo";
+import responsive from "@/constants/Responsive";
+import Toast from "@/components/utils/toast";
+
 
 export default function NewPassword() {
   const navigation = useNavigation();
@@ -17,11 +23,31 @@ export default function NewPassword() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
-
+  const { signIn } = useSignIn();
+  const { setActive } = useClerk();
+  const router = useRouter();
+  const toastRef = useRef<any>({});
 
   const handlePasswordChange = (text: React.SetStateAction<string>) => setPassword(text);
   const handleConfirmPasswordChange = (text: React.SetStateAction<string>) => setConfirmPassword(text);
-
+  const resetPassword = async () => {
+    try {
+      if(!signIn) return;
+      const result = await signIn.resetPassword({ password });
+      
+      if (result.createdSessionId) {
+        // Use setActive from useClerk
+        await setActive({ session: result.createdSessionId });
+        router.replace("/(forgotPassword)/resetSuccessfully");
+      }
+    } catch (err) {
+      toastRef.current.show({
+        type: "error",
+        title: "Reset Failed",
+        description: "Password reset failed. Please try again.",
+      });
+    }
+  };
   const passwordsMatch = password === confirmPassword && password.length > 0;
 
   const toggleShowPassword = () => setShowPassword(!showPassword);
@@ -41,6 +67,23 @@ export default function NewPassword() {
   // Handle keyboard dismiss on tap
   const dismissKeyboard = () => Keyboard.dismiss();
 
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showKeyboard = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideKeyboard = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+  
+    return () => {
+      showKeyboard.remove();
+      hideKeyboard.remove();
+    };
+  }, []);
+
+
   return (
     <Animated.View style={styles.container} exiting={FadeOut}>
       <TouchableWithoutFeedback onPress={dismissKeyboard}>
@@ -53,12 +96,6 @@ export default function NewPassword() {
               <MaterialIcons name="arrow-back-ios-new" size={16} color="black" />
             </TouchableOpacity>
           </View>
-
-          {/* Top Left Background Image */}
-          <Image source={require("../../assets/images/PawprintT.png")} style={styles.topLeftImage} />
-
-          {/* Bottom Right Background Image */}
-          <Image source={require("../../assets/images/PawprintB.png")} style={styles.bottomRightImage} />
 
           {/* Logo Icon */}
           <Image source={require("../../assets/images/paw.png")} style={styles.pawIcon} />
@@ -116,13 +153,18 @@ export default function NewPassword() {
           )}
 
           {/* Continue Button */}
+          {!isKeyboardVisible && (
           <View style={styles.bottomContainer}>
-            <TouchableOpacity style={[styles.continueButton, !passwordsMatch && styles.disabledButton]} disabled={!passwordsMatch} onPress={() => router.push('./resetSuccessfully')}>
+            <TouchableOpacity style={[styles.continueButton, !passwordsMatch && styles.disabledButton]} disabled={!passwordsMatch} onPress={async () => {
+              await resetPassword(); 
+            }}>
               <Text style={styles.continueText}>Save New Password</Text>
             </TouchableOpacity>
           </View>
+          )}
         </View>
       </TouchableWithoutFeedback>
+      <Toast ref={toastRef} />
     </Animated.View>
   );
 }
@@ -137,23 +179,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     paddingHorizontal: 20,
-    paddingVertical: 50,
-  },
-  topLeftImage: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "90%",
-    height: "40%",
-    resizeMode: "contain",
-  },
-  bottomRightImage: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: "96%",
-    height: "49%",
-    resizeMode: "contain",
   },
   pawIcon: {
     width: 61,
@@ -165,26 +190,29 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    marginTop: Platform.OS === "ios" ? 0 : -20,
+    marginTop: Platform.OS === "ios" ? 70 : 20,
   },
   textContainer: {
     alignSelf: "flex-start",
     width: "100%",
   },
   title: {
-    fontSize: 30,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(29) : responsive.fontSize(23),
     fontWeight: "600",
     color: "#000",
     marginTop: 10,
     marginBottom: 10,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     color: "#939393",
     marginBottom: 20,
   },
   inputHeader: {
-    fontSize: 16,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     marginTop: 10,
     marginBottom: 10,
     fontWeight: "500",
@@ -201,11 +229,13 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     padding: 15,
-    fontSize: 16,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
   },
   errorText: {
     color: "crimson",
-    fontSize: 14,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     textAlign: "left",
     width: "100%",
     left: 10,
@@ -235,7 +265,8 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
   },
 });

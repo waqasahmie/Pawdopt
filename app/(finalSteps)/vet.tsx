@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -13,9 +13,11 @@ import {
   Alert,
   Modal,
   Platform,
+  KeyboardAvoidingView,
+  FlatList,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import CountryPicker, {
   Country,
@@ -29,6 +31,7 @@ import { WebView } from "react-native-webview";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import { MultiplicationSignIcon } from "@hugeicons/core-free-icons";
 import { router } from "expo-router";
+import { useAppContext } from "../../hooks/AppContext";
 
 import { Clock } from "@/components/utils/clock";
 import { TimeRange } from "@/components/utils/time-range";
@@ -37,20 +40,12 @@ import {
   useDerivedValue,
   runOnJS,
 } from "react-native-reanimated";
+import responsive from "@/constants/Responsive";
 
 export default function FinalStepsVet() {
   const navigation = useNavigation();
   const dismissKeyboard = () => {
     Keyboard.dismiss();
-  };
-  const handlePress = () => {
-    setModalVisible(false);
-    router.push({
-      pathname: "/(finalSteps)/accountCreated",
-      params: {
-        from: 'vet',
-      },
-    });
   };
 
   const [countryCode, setCountryCode] = useState<CountryCode>("PK"); // Default to Pakistan
@@ -76,11 +71,11 @@ export default function FinalStepsVet() {
   const [cnicBack, setCnicBack] = useState<string | null>(null);
   const [isButtonDisabled, setIsButtonDisabled] = useState(true);
   const [modalVisible, setModalVisible] = useState(false); // For Cal.com
-
+  const { updateVetData } = useAppContext();
   const TimezoneOffsetMs = -new Date().getTimezoneOffset() * 60000;
 
   const timeSlots = new Array(48).fill(0).map((_, index) => {
-    const hour = Math.floor(index / 2) + 24; // 8:00 AM onward
+    const hour = Math.floor(index / 2) + 24;
     const minutes = index % 2 === 0 ? 0 : 30;
     return new Date(2025, 0, 1, hour, minutes);
   });
@@ -89,6 +84,26 @@ export default function FinalStepsVet() {
   const [endTime, setEndTime] = useState<Date | null>(null);
   const [isStartTime, setIsStartTime] = useState(true);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const { tempemail, tempphone, tempcountryCode, tempcallingCode } =
+    useAppContext();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (tempemail && tempemail.trim() !== "") {
+        setEmail(tempemail);
+      }
+
+      if (tempcallingCode && tempcallingCode.trim() !== "") {
+        setCallingCode(tempcallingCode);
+      }
+      if (tempcountryCode && tempcountryCode.trim() !== "") {
+        setCountryCode(tempcountryCode as CountryCode);
+      }
+      if (tempphone && tempphone.trim() !== "") {
+        setPhoneNumber(tempphone);
+      }
+    }, [tempemail, tempphone, tempcallingCode])
+  );
 
   // shared time state
   const selectedDate = useSharedValue(timeSlots[0].getTime());
@@ -178,6 +193,34 @@ export default function FinalStepsVet() {
     cnicFront,
     cnicBack,
   ]);
+
+  const handlePress = () => {
+    updateVetData("firstName", firstName);
+    updateVetData("lastName", lastName);
+    updateVetData("email", email);
+    updateVetData("phoneNumber", `+${callingCode}${phoneNumber}`);
+    updateVetData("gender", value);
+    updateVetData("cnic", cnic);
+    updateVetData("cnicFront", cnicFront);
+    updateVetData("cnicBack", cnicBack);
+    updateVetData("title", title);
+    updateVetData("clinicName", clinicName);
+    updateVetData("startTime", startTime);
+    updateVetData("endTime", endTime);
+    updateVetData("license", license);
+    updateVetData("email", email);
+    updateVetData("experience", experience);
+    updateVetData("callingCode", callingCode);
+    updateVetData("countryCode", countryCode);
+
+    setModalVisible(false);
+    router.push({
+      pathname: "/(finalSteps)/accountCreated",
+      params: {
+        from: "vet",
+      },
+    });
+  };
 
   const handleImagePicker = async (side: "front" | "back" | "license") => {
     Alert.alert(
@@ -281,190 +324,222 @@ export default function FinalStepsVet() {
       )}
     </TouchableOpacity>
   );
-  return (
-    <View style={styles.container}>
-      <View style={styles.innerContainer}>
-        <StatusBar barStyle="dark-content" />
-        {/* Back Button (Positioned Below Status Bar) */}
-        <View style={styles.headerContainer}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{ zIndex: 10 }}
-          >
-            <MaterialIcons name="arrow-back-ios-new" size={16} color="black" />
-          </TouchableOpacity>
 
-          {/* Progress Bar */}
-          <View style={styles.progressBarContainer}>
-            <View style={styles.progressBar} />
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showKeyboard = Keyboard.addListener("keyboardDidShow", () => {
+      setKeyboardVisible(true);
+    });
+    const hideKeyboard = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      showKeyboard.remove();
+      hideKeyboard.remove();
+    };
+  }, []);
+
+  const formData = [
+    {
+      key: "title",
+      render: () => (
+        <>
+          <View style={styles.textContainer}>
+            <Text style={styles.inputHeader}>Title</Text>
           </View>
-          <Text style={{ color: "#939393", fontSize: 16 }}>4/4</Text>
-        </View>
-        {/* Top Left Background Image */}
-        <Image
-          source={require("../../assets/images/PawprintT.png")}
-          style={styles.topLeftImage}
-        />
-        {/* Bottom Right Background Image */}
-        <Image
-          source={require("../../assets/images/PawprintB.png")}
-          style={styles.bottomRightImage}
-        />
-        {/* Welcome Text */}
-        <View style={styles.textContainer}>
-          <Text style={styles.title}>Final Steps!</Text>
-          <Text style={styles.subtitle}>
-            We’re almost there! Fill in your personal details to create a
-            profile and start your journey towards a responsible Adopter.
-          </Text>
-        </View>
-        <View style={styles.scrollContainer}>
-          <TouchableWithoutFeedback onPress={dismissKeyboard}>
-            <ScrollView
-              contentContainerStyle={{ flexGrow: 1 }}
-              showsVerticalScrollIndicator={false}
-              keyboardDismissMode="on-drag"
+          <TextInput
+            placeholder="Dr."
+            style={styles.input}
+            placeholderTextColor="#939393"
+            autoCapitalize="sentences"
+            value={title}
+            onChangeText={(text) => setTitle(formatTitle(text))}
+          />
+        </>
+      ),
+    },
+    {
+      key: "firstName",
+      render: () => (
+        <>
+          <View style={styles.textContainer}>
+            <Text style={styles.inputHeader}>First Name</Text>
+          </View>
+          <TextInput
+            placeholder="Waqas"
+            style={styles.input}
+            placeholderTextColor="#939393"
+            autoCapitalize="sentences"
+            value={firstName}
+            onChangeText={setFirstName}
+          />
+        </>
+      ),
+    },
+    {
+      key: "lastName",
+      render: () => (
+        <>
+          <View style={styles.textContainer}>
+            <Text style={styles.inputHeader}>
+              Last Name <Text style={{ color: "#939393" }}>(Optional)</Text>
+            </Text>
+          </View>
+          <TextInput
+            placeholder="Ahmed"
+            style={styles.input}
+            placeholderTextColor="#939393"
+            autoCapitalize="sentences"
+            value={lastName}
+            onChangeText={setLastName}
+          />
+        </>
+      ),
+    },
+    {
+      key: "clinicName",
+      render: () => (
+        <>
+          <View style={styles.textContainer}>
+            <Text style={styles.inputHeader}>Clinic Name</Text>
+          </View>
+          <TextInput
+            placeholder="Pets Clinic"
+            style={styles.input}
+            placeholderTextColor="#939393"
+            autoCapitalize="sentences"
+            value={clinicName}
+            onChangeText={setclinicName}
+          />
+        </>
+      ),
+    },
+    {
+      key: "clinicTimings",
+      render: () => (
+        <>
+          <View style={styles.textContainer}>
+            <Text style={styles.inputHeader}>Clinic Timings</Text>
+          </View>
+
+          <View style={styles.timeRow}>
+            <TouchableOpacity
+              style={styles.timeBox}
+              onPress={() => {
+                setIsStartTime(true);
+                setShowTimePicker(true);
+                selectedDate.value = startTime
+                  ? startTime.getTime()
+                  : timeSlots[0].getTime();
+              }}
             >
-              {/* Input Fields */}
-              <View style={styles.textContainer}>
-                <Text style={styles.inputHeader}>Title</Text>
-              </View>
-              <TextInput
-                placeholder="Dr."
-                style={styles.input}
-                placeholderTextColor="#939393"
-                autoCapitalize="sentences"
-                value={title}
-                onChangeText={(text) => setTitle(formatTitle(text))}
-              />
+              <Text style={styles.label}>Start Time</Text>
+              <Text style={styles.timeValue}>
+                {startTime ? formatTime(startTime) : "Select"}
+              </Text>
+            </TouchableOpacity>
 
-              <View style={styles.textContainer}>
-                <Text style={styles.inputHeader}>First Name</Text>
-              </View>
-              <TextInput
-                placeholder="Waqas"
-                style={styles.input}
-                placeholderTextColor="#939393"
-                autoCapitalize="sentences"
-                value={firstName}
-                onChangeText={setFirstName}
-              />
+            <TouchableOpacity
+              style={styles.timeBox}
+              onPress={() => {
+                setIsStartTime(false);
+                setShowTimePicker(true);
+                selectedDate.value = endTime
+                  ? endTime.getTime()
+                  : timeSlots[0].getTime();
+              }}
+            >
+              <Text style={styles.label}>End Time</Text>
+              <Text style={styles.timeValue}>
+                {endTime ? formatTime(endTime) : "Select"}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-              <View style={styles.textContainer}>
-                <Text style={styles.inputHeader}>
-                  Last Name <Text style={{ color: "#939393" }}>(Optional)</Text>
-                </Text>
-              </View>
-              <TextInput
-                placeholder="Ahmed"
-                style={styles.input}
-                placeholderTextColor="#939393"
-                autoCapitalize="sentences"
-                value={lastName}
-                onChangeText={setLastName}
-              />
-
-              <View style={styles.textContainer}>
-                <Text style={styles.inputHeader}>Clinic Name</Text>
-              </View>
-              <TextInput
-                placeholder="Pets Clinic"
-                style={styles.input}
-                placeholderTextColor="#939393"
-                autoCapitalize="sentences"
-                value={clinicName}
-                onChangeText={setclinicName}
-              />
-
-              <View style={styles.textContainer}>
-                <Text style={styles.inputHeader}>Clinic Timings</Text>
-              </View>
-
-              <View style={styles.timeRow}>
-                <TouchableOpacity
-                  style={styles.timeBox}
-                  onPress={() => {
-                    setIsStartTime(true);
-                    setShowTimePicker(true);
-                    selectedDate.value = startTime ? startTime.getTime() : timeSlots[0].getTime();
-                  }}
-                  
-                >
-                  <Text style={styles.label}>Start Time</Text>
-                  <Text style={styles.timeValue}>
-                    {startTime ? formatTime(startTime) : "Select"}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.timeBox}
-                  onPress={() => {
-                    setIsStartTime(false);
-                    setShowTimePicker(true);
-                    selectedDate.value = endTime ? endTime.getTime() : timeSlots[0].getTime();
-                  }}
-                  
-                >
-                  <Text style={styles.label}>End Time</Text>
-                  <Text style={styles.timeValue}>
-                    {endTime ? formatTime(endTime) : "Select"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <Modal visible={showTimePicker} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                  <View style={styles.modalContent}>
-                    <View style={{flexDirection:"row",gap:40}}>
-                    <Clock date={clockDate} size={100} />
-                    <TimeRange
-                      dates={timeSlots}
-                      onDateChange={(updatedDate: number) => {
-                        "worklet";
-                        selectedDate.value = updatedDate;
-                      }}
-                    />
-                    </View>
-                    <View style={{flexDirection:"row",gap:10}}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          const selected = new Date(selectedDate.value);
-                          if (isStartTime) setStartTime(selected);
-                          else setEndTime(selected);
-                          setShowTimePicker(false);
-                        }}
-                        style={styles.timingContainer}
-                      >
-                        <Text style={{ color: "#fff" }}>Confirm</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        onPress={() => setShowTimePicker(false)}
-                        style={styles.timingContainer}
-                      >
-                        <Text style={{ color: "#fff" }}>Cancel</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+          <Modal visible={showTimePicker} transparent animationType="fade">
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <View style={{ flexDirection: "row", gap: 40 }}>
+                  <Clock date={clockDate} size={100} />
+                  <TimeRange
+                    dates={timeSlots}
+                    onDateChange={(updatedDate: number) => {
+                      "worklet";
+                      selectedDate.value = updatedDate;
+                    }}
+                  />
                 </View>
-              </Modal>
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      const selected = new Date(selectedDate.value);
+                      if (isStartTime) setStartTime(selected);
+                      else setEndTime(selected);
+                      setShowTimePicker(false);
+                    }}
+                    style={styles.timingContainer}
+                  >
+                    <Text style={{ color: "#fff" }}>Confirm</Text>
+                  </TouchableOpacity>
 
-              {/* Email Input Field */}
-              <View style={styles.textContainer}>
-                <Text style={styles.inputHeader}>Email</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowTimePicker(false)}
+                    style={styles.timingContainer}
+                  >
+                    <Text style={{ color: "#fff" }}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <TextInput
-                placeholder="drwaqasahmed@gmail.com"
-                style={styles.input}
-                value={email}
-                placeholderTextColor="#939393"
-                autoCapitalize="none"
-                onChangeText={setEmail}
-              />
-              {/* Phone Number Input */}
-              <View style={styles.textContainer}>
-                <Text style={styles.inputHeader}>Phone Number</Text>
-              </View>
+            </View>
+          </Modal>
+        </>
+      ),
+    },
+    {
+      key: "email",
+      render: () => (
+        <>
+          <View style={styles.textContainer}>
+            <Text style={styles.inputHeader}>Email</Text>
+          </View>
+          {tempemail === " " ? (
+            <TextInput
+              placeholder="waqasahmed@gmail.com"
+              style={styles.input}
+              value={email}
+              placeholderTextColor="#939393"
+              autoCapitalize="none"
+              onChangeText={setEmail}
+            />
+          ) : (
+            <TextInput
+              placeholder="waqasahmed@gmail.com"
+              style={styles.input}
+              value={(tempemail !== "" ? tempemail : email) || ""}
+              placeholderTextColor="#939393"
+              autoCapitalize="none"
+              editable={tempemail === ""}
+              onChangeText={(text) => {
+                if (tempemail === "") {
+                  setEmail(text);
+                }
+              }}
+            />
+          )}
+        </>
+      ),
+    },
+    {
+      key: "phone",
+      render: () => (
+        <>
+          <View style={styles.textContainer}>
+            <Text style={styles.inputHeader}>Phone Number</Text>
+          </View>
+          {tempphone === " " ? (
+            <>
               <View style={styles.InputContainer}>
                 <TouchableOpacity
                   style={styles.countryPicker}
@@ -495,108 +570,235 @@ export default function FinalStepsVet() {
                   onChangeText={setPhoneNumber}
                 />
               </View>
-              {/* Gender Dropdown */}
-              <View style={styles.textContainer}>
-                <Text style={styles.inputHeader}>Gender</Text>
-              </View>
-              <DropDownPicker
-                listMode="SCROLLVIEW"
-                open={open}
-                value={value}
-                items={items}
-                setOpen={setOpen}
-                setValue={setValue}
-                setItems={setItems}
-                placeholder="Select Gender"
-                style={styles.dropdown}
-                dropDownContainerStyle={styles.dropdownContainer}
-                containerStyle={{ marginBottom: open ? 160 : 15 }} // Push UI down when open
-                dropDownDirection="BOTTOM"
-              />
-              {/* Experience Input */}
-              <View style={styles.textContainer}>
-                <Text style={styles.inputHeader}>Experience</Text>
-              </View>
+            </>
+          ) : (
+            <View style={styles.InputContainer}>
+              <TouchableOpacity
+                style={styles.countryPicker}
+                onPress={() => setVisible(true)}
+              >
+                <CountryPicker
+                  visible={visible}
+                  withFilter={true}
+                  withFlag={true}
+                  withCallingCode={true}
+                  withModal={true}
+                  countryCode={countryCode}
+                  onSelect={(country: Country) => {
+                    setCountryCode((country?.cca2 as CountryCode) || "PK");
+                    setCallingCode(country?.callingCode[0] || "92");
+                    setVisible(false);
+                  }}
+                  onClose={() => setVisible(false)}
+                />
+                <Text style={styles.callingCode}>+{callingCode} ▼</Text>
+              </TouchableOpacity>
               <TextInput
-                placeholder="5 Years"
-                style={styles.input}
+                style={styles.phoneNumberInput}
+                placeholder="Enter phone number"
                 placeholderTextColor="#939393"
                 keyboardType="numeric"
-                value={experience}
-                onChangeText={(text) => setExperience(formatExperience(text))}
+                editable={tempphone === ""}
+                value={tempphone || phoneNumber}
+                onChangeText={(text) => {
+                  if (tempphone === "") {
+                    setPhoneNumber(text);
+                  }
+                }}
               />
-              {/* CNIC Front */}
-              <View style={styles.textContainer}>
-                <Text style={styles.inputHeader}>Vet License</Text>
-              </View>
-              {renderUploader("license", license)}
-              {/* CNIC Input */}
-              <View style={styles.textContainer}>
-                <Text style={styles.inputHeader}>CNIC Number</Text>
-              </View>
-              <TextInput
-                placeholder="Enter CNIC (XXXXX-XXXXXXX-X)"
-                style={styles.input}
-                placeholderTextColor="#939393"
-                keyboardType="numeric"
-                maxLength={15}
-                value={cnic}
-                onChangeText={(text) => setCnic(formatCnic(text))}
-              />
-              {/* CNIC Front */}
-              <View style={styles.textContainer}>
-                <Text style={styles.inputHeader}>CNIC Front</Text>
-              </View>
-              {renderUploader("front", cnicFront)}
+            </View>
+          )}
+        </>
+      ),
+    },
+    {
+      key: "gender",
+      render: () => (
+        <>
+          <View style={styles.textContainer}>
+            <Text style={styles.inputHeader}>Gender</Text>
+          </View>
+          <DropDownPicker
+            listMode="SCROLLVIEW"
+            open={open}
+            value={value}
+            items={items}
+            setOpen={setOpen}
+            setValue={setValue}
+            setItems={setItems}
+            placeholder="Select Gender"
+            style={styles.dropdown}
+            dropDownContainerStyle={styles.dropdownContainer}
+            containerStyle={{ marginBottom: open ? 160 : 15 }} // Push UI down when open
+            dropDownDirection="BOTTOM"
+            textStyle={styles.dropdownText}
+          />
+        </>
+      ),
+    },
+    {
+      key: "experience",
+      render: () => (
+        <>
+          <View style={styles.textContainer}>
+            <Text style={styles.inputHeader}>Experience</Text>
+          </View>
+          <TextInput
+            placeholder="5 Years"
+            style={styles.input}
+            placeholderTextColor="#939393"
+            keyboardType="numeric"
+            value={experience}
+            onChangeText={(text) => setExperience(formatExperience(text))}
+          />
+        </>
+      ),
+    },
+    {
+      key: "license",
+      render: () => (
+        <>
+          <View style={styles.textContainer}>
+            <Text style={styles.inputHeader}>Vet License</Text>
+          </View>
+          {renderUploader("license", license)}
+        </>
+      ),
+    },
+    {
+      key: "cnic",
+      render: () => (
+        <>
+          <View style={styles.textContainer}>
+            <Text style={styles.inputHeader}>CNIC Number</Text>
+          </View>
+          <TextInput
+            placeholder="Enter CNIC (XXXXX-XXXXXXX-X)"
+            style={styles.input}
+            placeholderTextColor="#939393"
+            keyboardType="numeric"
+            maxLength={15}
+            value={cnic}
+            onChangeText={(text) => setCnic(formatCnic(text))}
+          />
+        </>
+      ),
+    },
+    {
+      key: "cnicFront",
+      render: () => (
+        <>
+          <View style={styles.textContainer}>
+            <Text style={styles.inputHeader}>CNIC Front</Text>
+          </View>
+          {renderUploader("front", cnicFront)}
+        </>
+      ),
+    },
+    {
+      key: "cnicBack",
+      render: () => (
+        <>
+          <View style={styles.textContainer}>
+            <Text style={styles.inputHeader}>CNIC Back</Text>
+          </View>
+          {renderUploader("back", cnicBack)}
+        </>
+      ),
+    },
+    {
+      key: "note",
+      render: () => (
+        <Text style={styles.inputNote}>
+          We request a picture of your CNIC to ensure the security of your
+          account and protect against fraudulent activities and scams. This
+          helps us verify your identity and maintain a safe environment for all
+          users.
+        </Text>
+      ),
+    },
+  ];
 
-              <View style={styles.textContainer}>
-                <Text style={styles.inputHeader}>CNIC Back</Text>
-              </View>
-              {renderUploader("back", cnicBack)}
-              <Text style={styles.inputNote}>
-                We request a picture of your CNIC to ensure the security of your
-                account and protect against fraudulent activities and scams.
-                This helps us verify your identity and maintain a safe
-                environment for all users.
-              </Text>
-            </ScrollView>
-          </TouchableWithoutFeedback>
-        </View>
-
-        {/* Continue Button */}
-        <View style={styles.bottomContainer}>
+  return (
+    <View style={styles.container}>
+      <View style={styles.innerContainer}>
+        <StatusBar barStyle="dark-content" />
+        {/* Back Button (Positioned Below Status Bar) */}
+        <View style={styles.headerContainer}>
           <TouchableOpacity
-            style={[
-              styles.continueButton,
-              isButtonDisabled && styles.disabledButton,
-            ]}
-            disabled={isButtonDisabled}
-            onPress={() => setModalVisible(true)}
+            onPress={() => navigation.goBack()}
+            style={{ zIndex: 10 }}
           >
-            <Text style={styles.continueText}>Setup Interview Meeting</Text>
+            <MaterialIcons name="arrow-back-ios-new" size={16} color="black" />
           </TouchableOpacity>
-          <Modal
-            visible={modalVisible}
-            animationType="slide"
-            presentationStyle="pageSheet"
-          >
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => handlePress()}
-            >
-              <HugeiconsIcon
-                icon={MultiplicationSignIcon}
-                size={20}
-                strokeWidth={2.5}
-              />
-            </TouchableOpacity>
-            <WebView
-              source={{
-                uri: "https://cal.com/pawdopt/pawdoptvetinterview",
-              }}
-            />
-          </Modal>
+
+          {/* Progress Bar */}
+          <View style={styles.progressBarContainer}>
+            <View style={styles.progressBar} />
+          </View>
+          <Text style={styles.pageIndicator}>4/4</Text>
         </View>
+
+        {/* Welcome Text */}
+        <View style={styles.textContainer}>
+          <Text style={styles.title}>Final Steps!</Text>
+          <Text style={styles.subtitle}>
+            We’re almost there! Fill in your personal details to create a
+            profile and start your journey towards a responsible Adopter.
+          </Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+          >
+            <TouchableWithoutFeedback onPress={dismissKeyboard}>
+              <FlatList
+                data={formData}
+                keyExtractor={(item) => item.key}
+                renderItem={({ item }) => item.render()}
+                ListFooterComponent={<View style={{ height: 70 }} />}
+                showsVerticalScrollIndicator={false}
+                keyboardDismissMode="on-drag"
+              />
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
+        </View>
+        {/* Continue Button */}
+        {(!isKeyboardVisible || modalVisible) && (
+          <View style={styles.bottomContainer}>
+            <TouchableOpacity
+              style={[
+                styles.continueButton,
+                isButtonDisabled && styles.disabledButton,
+              ]}
+              disabled={isButtonDisabled}
+              onPress={() => setModalVisible(true)}
+            >
+              <Text style={styles.continueText}>Setup Interview Meeting</Text>
+            </TouchableOpacity>
+            <Modal
+              visible={modalVisible}
+              animationType="slide"
+              presentationStyle="pageSheet"
+            >
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => handlePress()}
+              >
+                <HugeiconsIcon
+                  icon={MultiplicationSignIcon}
+                  size={20}
+                  strokeWidth={2.5}
+                />
+              </TouchableOpacity>
+              <WebView
+                source={{
+                  uri: "https://cal.com/pawdopt/pawdoptvetinterview",
+                }}
+              />
+            </Modal>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -612,56 +814,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
     paddingHorizontal: 20,
-    paddingVertical: 50,
     width: "100%",
-  },
-  scrollContainer: {
-    width: "100%",
-    marginBottom: "60%",
   },
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between", // Back button left & email right
+    justifyContent: "space-between",
     width: "100%",
-    marginTop: Platform.OS === "ios" ? 0 : -20, // To place it below the status bar
+    marginTop: Platform.OS === "ios" ? 70 : 20,
   },
-  topLeftImage: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "90%",
-    height: "40%",
-    resizeMode: "contain",
-  },
-  bottomRightImage: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: "96%",
-    height: "49%",
-    resizeMode: "contain",
+  pageIndicator: {
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
+    color: "#939393",
   },
   title: {
-    fontSize: 30,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(29) : responsive.fontSize(23),
     fontWeight: "600",
     color: "#000",
     marginTop: 40,
     marginBottom: 10,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     color: "#939393",
-    lineHeight: 24, // 1.5 times the font size (16 * 1.5)
+    lineHeight: Platform.OS === "ios" ? 24 : 20,
     marginBottom: 30,
   },
   progressBarContainer: {
-    flexDirection: "row", // new
+    flexDirection: "row",
     width: "70%",
     height: 8,
     backgroundColor: "#E0E0E0",
     borderRadius: 4,
-    overflow: "hidden", // Ensures the border radius is applied correctly
+    overflow: "hidden",
   },
   progressBar: {
     width: "100%",
@@ -670,10 +858,11 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   textContainer: {
-    width: "100%", // Ensures full width
+    width: "100%",
   },
   inputHeader: {
-    fontSize: 14,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(12),
     marginBottom: 5,
     fontWeight: 400,
     marginLeft: 5,
@@ -685,14 +874,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderColor: "#d3d3d3",
     backgroundColor: "#fff",
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     marginBottom: 15,
   },
   inputNote: {
     color: "#939393",
-    fontSize: 10,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(9) : responsive.fontSize(7),
     marginTop: -10,
-    marginBottom: 30,
+    marginBottom: 35,
   },
   InputContainer: {
     flexDirection: "row",
@@ -711,30 +902,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   callingCode: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
   },
   phoneNumberInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     marginLeft: 5,
-  },
-  mobileNumber: {
-    color: "#2BBFFF",
-    fontSize: 16,
-    marginTop: 15,
   },
   dropdown: {
     borderWidth: 1,
     borderColor: "#d3d3d3",
     borderRadius: 8,
-    paddingHorizontal: 10, // Padding inside the dropdown box
+    paddingHorizontal: 10,
     paddingVertical: 8,
+  },
+  dropdownText: {
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
   },
   dropdownContainer: {
     borderWidth: 1,
     borderColor: "#d3d3d3",
     borderRadius: 8,
-    padding: 10, // Padding inside the dropdown options container
+    padding: 10,
   },
   uploadBox: {
     borderWidth: 1,
@@ -753,7 +945,8 @@ const styles = StyleSheet.create({
     color: "#000",
     textAlign: "center",
     marginTop: 10,
-    fontSize: 18,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     fontWeight: 300,
   },
   buttonRow: {
@@ -778,7 +971,7 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     position: "absolute",
-    bottom: 40, // Change to 50 if needed
+    bottom: 40,
     width: "100%",
   },
   continueButton: {
@@ -798,32 +991,20 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
   },
   modalCloseButton: {
-    // backgroundColor: "#2BBFFF",
-    // paddingVertical: 15,
-    // paddingHorizontal: 20,
-    // marginTop: 10,
-    // // bottom: 30,
-    // marginBottom: 30,
-    // borderRadius: 30,
-    // width: "90%",
-    // alignItems: "center",
-    // alignSelf: "center",
-    // justifyContent: "center",
     position: "absolute",
     top: 20,
     right: 20,
     zIndex: 10,
-    // backgroundColor: "rgba(0,0,0,0.1)",
-    // padding: 10,
-    // borderRadius: 20,
   },
   modalButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
   },
   timeRow: {
@@ -839,20 +1020,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#d3d3d3",
   },
-  timingContainer:{
+  timingContainer: {
     marginTop: 15,
     backgroundColor: "#1e1e1e",
     padding: 8,
     borderRadius: 8,
-    justifyContent:"center"
+    justifyContent: "center",
   },
   label: {
-    fontSize: 12,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(9),
     color: "#939393",
     marginBottom: 4,
   },
   timeValue: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     color: "#000",
   },
   modalOverlay: {

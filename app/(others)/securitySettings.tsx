@@ -8,12 +8,14 @@ import {
   Switch,
   Pressable,
   ScrollView,
-  SafeAreaView,
+  Platform,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import responsive from "@/constants/Responsive";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SecuritySettings() {
   const navigation = useNavigation();
@@ -72,7 +74,7 @@ export default function SecuritySettings() {
           <Switch
             onValueChange={toggleSwitch}
             value={switchValue}
-            trackColor={{ true: "#2BBFFF" }} // Change track color
+            trackColor={{ true: "#2BBFFF" }} 
           />
         </View>
 
@@ -81,10 +83,10 @@ export default function SecuritySettings() {
           <Pressable key={index} style={styles.cardContainer}
           onPress={() => {
             if (item.title === "Change Password") {
-              router.push("/(others)/changePassword"); // Adjust path to match your route file
+              router.push("/(others)/changePassword"); 
             }
             else if (item.title === "Delete Account") {
-              router.push("/(others)/vetDeleteAccount"); // Adjust path to match your route file
+              router.push("/(others)/vetDeleteAccount"); 
             }
           }}
           >
@@ -121,11 +123,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    marginTop: 20,
+    marginTop: Platform.OS === "ios" ? 20 : 20,
     marginBottom: 40,
   },
   navText: {
-    fontSize: 24,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     fontWeight: "500",
     color: "#000",
     position: "absolute",
@@ -141,7 +143,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   toggleText: {
-    fontSize: 22,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(19) : responsive.fontSize(16),
     fontWeight: "400",
     color: "#000",
     width: "80%",
@@ -154,16 +156,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   cardTitle: {
-    fontSize: 22,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(19) : responsive.fontSize(16),
     fontWeight: "400",
   },
   cardSubtitle: {
-    fontSize: 14,
+    fontSize:Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     fontWeight: 300,
     color: "#939393",
-    marginTop: 10,
+    marginTop: 5,
     width: 260,
-    lineHeight: 14 * 1.5,
+    lineHeight: Platform.OS === "ios" ? 14 * 1.5 : 12 * 1.5,
   },
 });
-

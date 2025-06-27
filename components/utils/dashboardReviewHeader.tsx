@@ -1,20 +1,11 @@
-// components/CustomHeader.tsx
 import React, { useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
-  Image,
   Platform,
 } from "react-native";
-import { ms, vs } from "react-native-size-matters"; // assuming you're using this
-import { HugeiconsIcon } from "@hugeicons/react-native";
-import {
-  Notification03Icon,
-  Search01Icon,
-  Stethoscope02Icon,
-} from "@hugeicons/core-free-icons";
+import responsive from "@/constants/Responsive";
 
 const ReviewHeader = () => {
 
@@ -30,7 +21,7 @@ const styles = StyleSheet.create({
   headerContainer: {
    
     alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 50 : 40,
+    paddingTop: Platform.OS === "ios" ? 70 : 20,
     paddingBottom: 10,
     paddingHorizontal: 16,
     backgroundColor: "#fff",
@@ -39,8 +30,8 @@ const styles = StyleSheet.create({
   },
  
   title: {
-    fontSize: 22,
-    fontWeight: "600",
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
+    fontWeight: "500",
   },
  
 });

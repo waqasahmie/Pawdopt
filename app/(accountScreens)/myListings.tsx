@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,8 @@ import {
   Image,
   Animated,
   Pressable,
-  SafeAreaView,
+  Platform,
+  RefreshControl,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -30,102 +31,151 @@ import { HugeiconsIcon } from "@hugeicons/react-native";
 import { Edit02Icon } from "@hugeicons/core-free-icons";
 import { DogBreedBS } from "@/components/utils/dogBreedBS";
 import { ParrotBreedBS } from "@/components/utils/parrotBreedBS";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+import { useUser } from "@clerk/clerk-expo";
+import { db } from "@/config/firebaseConfig";
+import { ActivityIndicator, FlatList } from "react-native";
+import { supabase } from "@/config/supabase";
+import { router } from "expo-router";
+import { useAppContext } from "@/hooks/AppContext";
+import responsive from "@/constants/Responsive";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MyListings() {
   const toastRef = useRef<any>({});
   const navigation = useNavigation();
-  const [listings, setListings] = useState([
-    {
-      id: 1,
-      petType: "Maine Coon",
-      name: "Smokey",
-      gender: require("../../assets/images/male.png"),
-      image: require("../../assets/images/mainecoon.jpg"),
-    },
-    {
-      id: 2,
-      petType: "Macaw",
-      name: "Lily",
-      gender: require("../../assets/images/female.png"),
-      image: require("../../assets/images/macaw.jpg"),
-    },
-    {
-      id: 3,
-      petType: "Golden Ret.",
-      name: "Lucy",
-      gender: require("../../assets/images/female.png"),
-      image: require("../../assets/images/goldenretriever.jpg"),
-    },
-    {
-      id: 4,
-      petType: "British Short.",
-      name: "Raya",
-      gender: require("../../assets/images/male.png"),
-      image: require("../../assets/images/britishshorthair.jpg"),
-    },
-    {
-      id: 5,
-      petType: "Cockatoo",
-      name: "Smiley",
-      gender: require("../../assets/images/female.png"),
-      image: require("../../assets/images/cockatoo.jpg"),
-    },
-    {
-      id: 6,
-      petType: "Ragdoll",
-      name: "Leo",
-      gender: require("../../assets/images/male.png"),
-      image: require("../../assets/images/ragdoll.jpg"),
-    },
-    {
-      id: 7,
-      petType: "Samoyed",
-      name: "Frosty",
-      gender: require("../../assets/images/male.png"),
-      image: require("../../assets/images/samoyed.jpg"),
-    },
-    {
-      id: 8,
-      petType: "African Grey",
-      name: "Gizmo",
-      gender: require("../../assets/images/female.png"),
-      image: require("../../assets/images/africangrey.jpg"),
-    },
-    {
-      id: 9,
-      petType: "Persian",
-      name: "Abby",
-      gender: require("../../assets/images/female.png"),
-      image: require("../../assets/images/persian.jpg"),
-    },
-  ]);
-
+  const { user } = useUser(); 
+  const [listings, setListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const {
+    petListingData,
+    updatePetListingData,
+    resetPetListingData,
+    isEdit,
+    setIsEdit,
+  } = useAppContext();
   const [petCategoryBSOpen, setPetCategoryBSOpen] = useState(false);
   const [petImagesBSOpen, setPetImagesBSOpen] = useState(false);
   const [petDescriptionBSOpen, setPetDescriptionBSOpen] = useState(false);
   const [petInfoBSOpen, setPetInfoBSOpen] = useState(false);
   const [petSubmittedOpen, setPetSubmittedOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [dogBreedOpen, setDogBreedOpen] = useState(false);
   const [catBreedOpen, setCatBreedOpen] = useState(false);
   const [parrotBreedOpen, setParrotBreedOpen] = useState(false);
+  const [currentItem, setCurrentItem] = useState<any>(null);
+  const [petId, setPetId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Function to delete an item
-  const deleteItem = (id: number, petName: string) => {
-    setListings(listings.filter((item) => item.id !== id));
+  const fetchPets = async () => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      const q = query(
+        collection(db, "petlistings"),
+        where("ownerId", "==", user.id)
+      );
 
-    toastRef.current.show({
-      type: "success",
-      title: "Successfully Deleted",
-      description: `${petName} has been removed.`,
-    });
+      const querySnapshot = await getDocs(q);
+      const pets = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return { id: doc.id, ...data };
+      });
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft);
+      setListings(pets);
+      setLoading(false);
+    } catch (error) {
+      toastRef.current.show({
+        type: "error",
+        title: "Oops! Something Went Wrong",
+        description: "Couldn't load pets.",
+      });
+      setLoading(false);
+    }
   };
 
-  // Render the delete button
+  useEffect(() => {
+    fetchPets();
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchPets();
+    setRefreshing(false);
+  };
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#2BBFFF" />
+        <Text>Loading your pets...</Text>
+      </View>
+    );
+  }
+
+  const deleteItem = async (id: string, petName: string) => {
+    try {
+      // Check if pet exists in the listings
+      const pet = listings.find((item) => item.id === id);
+      if (!pet) {
+        console.error(`Pet with id ${id} not found.`);
+        toastRef.current.show({
+          type: "danger",
+          title: "Delete Failed",
+          description: `Pet with ID ${id} not found.`,
+        });
+        return;
+      }
+
+      if (pet?.image && Array.isArray(pet.image)) {
+        const imagePaths = pet.image.map((url: string) => {
+          const parts = url.split(
+            "/storage/v1/object/public/user-documents/"
+          )[1];
+          return parts;
+        });
+
+        const { data, error: imageError } = await supabase.storage
+          .from("user-documents")
+          .remove(imagePaths);
+        if (imageError) {
+          toastRef.current.show({
+            type: "error",
+            title: "Delete Failed",
+            description: "Error removing images from storage.",
+          });
+        }
+      }
+
+      await deleteDoc(doc(db, "petlistings", id));
+
+      setListings((prev) => prev.filter((item) => item.id !== id));
+
+      toastRef.current.show({
+        type: "success",
+        title: "Successfully Deleted",
+        description: `${petName} has been removed.`,
+      });
+
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft);
+    } catch (error) {
+      toastRef.current.show({
+        type: "error",
+        title: "Delete Failed",
+        description: `Could not delete ${petName}. Please try again.`,
+      });
+    }
+  };
+
   const renderRightActions = (
-    id: number,
+    id: string,
     petName: string,
     progress: Animated.AnimatedInterpolation<string | number>
   ) => {
@@ -146,8 +196,73 @@ export default function MyListings() {
     );
   };
 
+  const categoryToIdMap: Record<string, string> = {
+    Cat: "1",
+    Dog: "2",
+    Parrot: "3",
+  };
+
+  const renderListingItem = ({ item }: { item: any }) => (
+    <Swipeable
+      key={item.id}
+      renderRightActions={(progress) =>
+        renderRightActions(item.id, item.name, progress)
+      }
+      onSwipeableWillOpen={() =>
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+      }
+    >
+      <View style={styles.listingCard}>
+        <Pressable
+          onPress={() => router.push(`/petDetail?petId=${item.id}`)}
+          style={{ flexDirection: "row", flex: 1 }}
+        >
+          <Image source={{ uri: item.image?.[0] }} style={styles.petImage} />
+          <View style={styles.textContainer}>
+            <Text style={styles.petType}>{item.breed}</Text>
+            <View style={styles.nameGender}>
+              <Text style={styles.petName}>{item.name}</Text>
+              <Image
+                source={
+                  item.gender?.toLowerCase() === "male"
+                    ? require("../../assets/images/male.png")
+                    : require("../../assets/images/female.png")
+                }
+                style={styles.genderIcon}
+              />
+            </View>
+          </View>
+        </Pressable>
+
+        <Pressable
+          onPress={() => {
+            setCurrentItem(item.category);
+            resetPetListingData();
+            updatePetListingData("category", item.category);
+            updatePetListingData("breed", item.breed);
+            updatePetListingData("image", item.image);
+            updatePetListingData("age", item.age);
+            updatePetListingData("gender", item.gender);
+            updatePetListingData("weight", item.weight);
+            updatePetListingData("price", item.price);
+            updatePetListingData("eyeColor", item.eyeColor);
+            updatePetListingData("name", item.name);
+            updatePetListingData("description", item.description);
+
+            setPetCategoryBSOpen(true);
+            setIsEdit(item.id);
+          }}
+          style={styles.editlistingIcon}
+        >
+          <HugeiconsIcon icon={Edit02Icon} size={18} color="#000" />
+        </Pressable>
+      </View>
+    </Swipeable>
+  );
+
   return (
-    <GestureHandlerRootView style={styles.container}>
+    <SafeAreaView style={styles.container}>
+    <GestureHandlerRootView>
       <View style={styles.innerContainer}>
         <StatusBar barStyle="dark-content" />
 
@@ -161,57 +276,47 @@ export default function MyListings() {
           </TouchableOpacity>
           <Text style={styles.navText}>My Listings</Text>
         </View>
-
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
+        <FlatList
+          data={listings}
+          keyExtractor={(item) => item.id}
+          renderItem={renderListingItem}
+          contentContainerStyle={{
+            flexGrow: 1,
+            marginBottom: 20,
+            alignItems: listings.length === 0 ? "center" : undefined,
+            justifyContent: listings.length === 0 ? "center" : undefined,
+          }}
           showsVerticalScrollIndicator={false}
-          style={{ marginBottom: 20 }}
-        >
-          {listings.map((item) => (
-            <Swipeable
-              key={item.id}
-              renderRightActions={(progress) =>
-                renderRightActions(item.id, item.name, progress)
-              }
-              onSwipeableWillOpen={() =>
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              }
-            >
-              <View style={styles.listingCard}>
-                <Image source={item.image} style={styles.petImage} />
-                <View style={styles.textContainer}>
-                  <Text style={styles.petType}>{item.petType}</Text>
-                  <View style={styles.nameGender}>
-                    <Text style={styles.petName}>{item.name}</Text>
-                    <Image source={item.gender} style={styles.genderIcon} />
-                  </View>
-                </View>
-                <Pressable
-                  onPress={() => setPetCategoryBSOpen(true)}
-                  style={styles.editlistingIcon}
-                >
-                  <HugeiconsIcon icon={Edit02Icon} size={18} color="#000" />
-                </Pressable>
-              </View>
-            </Swipeable>
-          ))}
-        </ScrollView>
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#2bbfff"
+              colors={["#2bbfff"]}
+              progressBackgroundColor="#f2fbff"
+            />
+          }
+          ListEmptyComponent={() => (
+            <Text style={styles.emptyList}>
+              🐾 You haven't listed any pets yet!
+            </Text>
+          )}
+        />
+
         <Modal
           isOpen={petCategoryBSOpen}
           closeModal={() => setPetCategoryBSOpen(false)}
         >
           <PetCategoryBS
-            // closeModal={() => setPetCategoryBSOpen(false)}
             onSelectCategory={(category) => {
-              setSelectedCategory(category);
-              setPetCategoryBSOpen(false); // close category modal
-              // Open the relevant breed modal
+              setPetCategoryBSOpen(false);
               if (category === "2") {
                 setDogBreedOpen(true);
               } else if (category === "1") {
                 setCatBreedOpen(true);
               } else if (category === "3") {
                 setParrotBreedOpen(true);
+                setSelectedCategory("parrot");
               }
             }}
             onCloseAndOpenModal={() => {
@@ -278,6 +383,7 @@ export default function MyListings() {
               setPetInfoBSOpen(false);
               setPetSubmittedOpen(true);
             }}
+            category={selectedCategory}
           />
         </Modal>
         <Modal
@@ -289,6 +395,7 @@ export default function MyListings() {
       </View>
       <Toast ref={toastRef} />
     </GestureHandlerRootView>
+    </SafeAreaView>
   );
 }
 
@@ -307,11 +414,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    marginTop: 60,
+    marginTop: Platform.OS === "ios" ? 30 : 20,
     marginBottom: 40,
   },
   navText: {
-    fontSize: 24,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     fontWeight: "500",
     color: "#000",
     position: "absolute",
@@ -342,9 +450,10 @@ const styles = StyleSheet.create({
   },
   petType: {
     fontFamily: "JUST Sans Outline ExBold",
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#AAAAAA",
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(25) : responsive.fontSize(20),
+    fontWeight: "600",
+    color: "#D4D4D4",
     marginBottom: 10,
   },
   nameGender: {
@@ -352,7 +461,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   petName: {
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     color: "#ACACAC",
     fontWeight: "600",
   },
@@ -377,7 +487,16 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "bold",
+  },
+  emptyList: {
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
+    fontWeight: "400",
+    alignSelf: "center",
+    color: "#ACACAC",
+    marginBottom: 25,
   },
 });

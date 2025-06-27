@@ -1,15 +1,20 @@
 {
   "expo": {
-    "name": "pawdopt",
+    "name": "Pawdopt",
     "slug": "pawdopt",
+    "owner": "waqasahmie",
     "version": "1.0.0",
+    "platforms": ["ios", "android"],
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/pawdoptApp-icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "bundleIdentifier": "com.waqasahmie.pawdopt",
+      "buildNumber": "1",
       "supportsTablet": true,
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSCameraUsageDescription": "Allow access to the camera to take photos.",
         "NSPhotoLibraryUsageDescription": "Pawdopt requires access to your photo library to upload pet photos.",
@@ -18,9 +23,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/Pawdopt-iconAndroid.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": ["android.permission.RECORD_AUDIO"],
+      "package": "com.waqasahmie.pawdopt",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -39,15 +47,37 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/pawdoptSplash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "2acce77b-12db-4d40-99fd-2eee1c8c08ec"
+      }
     }
   }
 }

@@ -1,5 +1,6 @@
+import responsive from "@/constants/Responsive";
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Platform } from "react-native";
 
 export default function PasswordStrengthMeter({ password }: { password: string }) {
   const checks = {
@@ -71,7 +72,7 @@ export default function PasswordStrengthMeter({ password }: { password: string }
 
       {password && (
         <>
-          <Text style={{ fontWeight: "bold", marginTop: 10 }}>
+          <Text style={styles.strengthText}>
             Strength:{" "}
             <Text
               style={{
@@ -111,11 +112,16 @@ const styles = StyleSheet.create({
   },
   pass: {
     color: "green",
-    fontSize: 14,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
   },
   fail: {
     color: "gray",
-    fontSize: 14,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
+  },
+  strengthText:{ 
+    fontWeight: "bold", 
+    marginTop: 10, 
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(14) : responsive.fontSize(12), 
   },
   barContainer: {
     height: 8,

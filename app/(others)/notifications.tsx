@@ -8,95 +8,165 @@ import {
   ScrollView,
   Pressable,
   Platform,
+  ActivityIndicator,
+  FlatList,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
 import { MailOpen02Icon } from "@hugeicons/core-free-icons";
+import { useEffect } from "react";
+import { useUser } from "@clerk/clerk-expo";
+import {
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
+import { db } from "@/config/firebaseConfig";
+import { router } from "expo-router";
+import responsive from "@/constants/Responsive";
+import { SafeAreaView } from "react-native-safe-area-context";
+// Add this interface at the top
+interface Notification {
+  id: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  read: boolean;
+  petId: string;
+  app:string;
+}
 
 export default function NotificationScreen() {
   const navigation = useNavigation();
+  const { user } = useUser();
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   const [readNotifications, setReadNotifications] = useState<{
     [key: string]: boolean;
   }>({});
 
-  const handlePress = (id: string) => {
+  const handlePress = async (notification: any) => {
+    const { id, petId ,app} = notification;
+    if (petId) {
+      router.push(`/petDetail?petId=${petId}`);
+    }
     setReadNotifications((prev) => ({ ...prev, [id]: true }));
+    try {
+      const userId = user?.id;
+      if (!userId) return;
+
+      const notifRef = doc(db, "users", userId, "notifications", id);
+      await updateDoc(notifRef, { read: true });
+
+      setNotifications((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, read: true } : item))
+      );
+
+      // Navigate to pet detail screen if petId exists
+    } catch (error) {
+      console.log("Failed to mark notification as read", error);
+    }
   };
 
-  const notifications = [
-    {
-      id: "1",
-      title: "New device login reminder\n",
-      description:
-        "We noticed that your Pawdopt account aleyshaamir@gmail.com was logged in on a new device on 01/08/25, 10:30 PM. To ensure the security of your account, we send you this notification as a reminder.\nLogin details:\n• Device type: Android\n• Login time: 08/01/25, 7:06 PM\nIf this login was you, please ignore this notification.\n",
-      timestamp: "08-01 19:06",
-    },
-    {
-      id: "2",
-      title: "One-time verification code.\n",
-      description:
-        "You requested a verification code to link your account.\nVerification code: 987654\nIf you didn’t request this, please contact support immediately.\n",
-      timestamp: "20-12 2:30",
-    },
-    {
-      id: "3",
-      title: "Upcoming appointment reminder\n",
-      description:
-        "You have an appointment scheduled with Dr. John Smith on 08/12/25, 05:06 PM.\nLocation: HealthCare Center, Block A.\nPlease arrive 10 minutes early.\n",
-      timestamp: "08-12 17:06",
-    },
-    {
-      id: "4",
-      title: "New pet alert in your area!\n",
-      description:
-        "A Labrador Retriever is available for adoption near your location!\nDistance: 2.5 km\nCheck it out on the Pawdopt app.\n",
-      timestamp: "15-12 12:09",
-    },
-    {
-      id: "5",
-      title: "Updated map details available.\n",
-      description:
-        "New vet clinics and shelters have been added to the map. Open the app to explore updated locations near you.\n",
-      timestamp: "28-11 20:02",
-    },
-    {
-      id: "6",
-      title: "Password successfully updated\n",
-      description:
-        "You have successfully updated your Pawdopt account password on 28/11/25, 10:06 PM.\nIf you did not make this change, please reset your password immediately.\n",
-      timestamp: "28-11 22:06",
-    },
-    {
-      id: "7",
-      title: "Adoption request approved\n",
-      description:
-        "Congratulations! Your request to adopt Bella (Golden Retriever) has been approved.\nPlease contact the shelter within 3 days to complete the adoption process.\n",
-      timestamp: "03-11 11:16",
-    },
-    {
-      id: "8",
-      title: "You've arrived at your destination\n",
-      description:
-        "Welcome to City Vet Clinic! Tap to check in or navigate back using Pawdopt.\n",
-      timestamp: "28-10 14:26",
-    },
-    {
-      id: "9",
-      title: "Volunteer with us!\n",
-      description:
-        "We’re looking for volunteers for our upcoming adoption drive on 22/10/25. Sign up in the app to join.\n",
-      timestamp: "22-10 13:26",
-    },
-  ];
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!user) return;
+      setLoading(true);
+      try {
+        const notificationsRef = collection(
+          db,
+          "users",
+          user.id,
+          "notifications"
+        );
+        const q = query(notificationsRef, orderBy("timestamp", "desc"));
+        const snapshot = await getDocs(q);
 
+        const data = snapshot.docs.map((doc) => {
+          const docData = doc.data();
+          const timestamp = docData.timestamp?.toDate();
+
+          const formattedTimestamp = timestamp
+            ? `${String(timestamp.getDate()).padStart(2, "0")}-${String(
+                timestamp.getMonth() + 1
+              ).padStart(2, "0")} ${String(timestamp.getHours()).padStart(
+                2,
+                "0"
+              )}:${String(timestamp.getMinutes()).padStart(2, "0")}`
+            : "No date";
+
+          return {
+            id: doc.id,
+            title: docData.title,
+            description: docData.description,
+            timestamp: formattedTimestamp,
+            read: docData.read || false, // Ensure read status is captured
+            petId: docData.petId || "",
+            app:docData.app || "",
+          };
+        });
+
+        setNotifications(data);
+
+        // Initialize readNotifications from Firestore data
+        const initialReadStatus = data.reduce((acc, item) => {
+          acc[item.id] = item.read;
+          return acc;
+        }, {} as { [key: string]: boolean });
+
+        setReadNotifications(initialReadStatus);
+      } catch (error) {
+        console.log("Error fetching notifications:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, [user]);
+
+  const markAllAsRead = async () => {
+    try {
+      const userId = user?.id;
+      if (!userId) return;
+
+      const updates: Promise<void>[] = [];
+
+      const updatedNotifications = notifications.map((item) => {
+        if (!item.read) {
+          const notifRef = doc(db, "users", userId, "notifications", item.id);
+          updates.push(updateDoc(notifRef, { read: true }));
+        }
+        return { ...item, read: true };
+      });
+
+      await Promise.all(updates); // Update all unread notifications in Firestore
+
+      setNotifications(updatedNotifications);
+
+      const allRead = updatedNotifications.reduce((acc, item) => {
+        acc[item.id] = true;
+        return acc;
+      }, {} as { [key: string]: boolean });
+
+      setReadNotifications(allRead);
+    } catch (error) {
+      console.log("Failed to mark all notifications as read:", error);
+    }
+  };
+
+  
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
         <StatusBar barStyle="dark-content" />
 
-        {/* Back Button (Positioned Below Status Bar) */}
+        {/* Header */}
         <View style={styles.headerContainer}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -106,56 +176,65 @@ export default function NotificationScreen() {
           </TouchableOpacity>
           <Text style={styles.navText}>Notifications</Text>
 
-          <TouchableOpacity
-            onPress={() => {
-              const allRead = notifications.reduce((acc, item) => {
-                acc[item.id] = true;
-                return acc;
-              }, {} as { [key: string]: boolean });
-              setReadNotifications(allRead);
-            }}
-          >
+          <TouchableOpacity onPress={markAllAsRead}>
             <HugeiconsIcon icon={MailOpen02Icon} size={22} color="black" />
           </TouchableOpacity>
         </View>
+
+        {/* Content Area */}
         <View style={styles.scrollContainer}>
-          <ScrollView
-            contentContainerStyle={{ flexGrow: 1 }}
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#2bbfff" />
+            </View>
+          ) : notifications.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No notifications found</Text>
+            </View>
+          ) : (
+            <FlatList
+            data={notifications}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{
+              flexGrow: 1,
+              paddingBottom: 20,
+              alignItems: notifications.length === 0 ? "center" : undefined,
+              justifyContent: notifications.length === 0 ? "center" : undefined,
+            }}
             showsVerticalScrollIndicator={false}
-          >
-            {notifications.map((item, index) => {
-              const isRead = readNotifications[item.id];
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>No notifications found</Text>
+            }
+            renderItem={({ item, index }) => {
+              const isRead = item.read || readNotifications[item.id];
               return (
-                <View key={item.id}>
+                <View>
                   <Pressable
                     style={styles.notificationItems}
-                    onPress={() => handlePress(item.id)}
+                    onPress={() => handlePress(item)}
                   >
                     <View
                       style={[
                         styles.dot,
-                        isRead && { backgroundColor: "#acacac" },
+                        isRead ? styles.readDot : styles.unreadDot,
                       ]}
                     />
                     <View>
                       <Text
-                        style={[styles.title, isRead && { color: "#acacac" }]}
+                        style={[styles.title, isRead && styles.readText]}
                       >
                         {item.title}
                       </Text>
                       <Text
                         style={[
                           styles.description,
-                          isRead && { color: "#acacac" },
+                          isRead && styles.readText,
                         ]}
                       >
                         {item.description}
                       </Text>
                       <Text
-                        style={[
-                          styles.timestamp,
-                          isRead && { color: "#acacac" },
-                        ]}
+                        style={[styles.timestamp, isRead && styles.readText]}
                       >
                         {item.timestamp}
                       </Text>
@@ -166,11 +245,12 @@ export default function NotificationScreen() {
                   )}
                 </View>
               );
-            })}
-          </ScrollView>
+            }}
+          />
+          )}
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -185,22 +265,53 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     paddingHorizontal: 20,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    position: "absolute", // Add these
+    left: 0,
+    right: 0,
+    top: 300,
+    bottom: 0,
+    backgroundColor: "#fff", // Match background color
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  emptyText: {
+    color: "#888",
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
+  },
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    marginTop: Platform.OS === "ios" ? 50 : 20,
+    marginTop: Platform.OS === "ios" ? 20 : 20,
     marginBottom: 20,
   },
   navText: {
-    fontSize: 24,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     fontWeight: "500",
     color: "#000",
     position: "absolute",
     textAlign: "center",
     left: 0,
     right: 0,
+  },
+  unreadDot: {
+    backgroundColor: "#2bbfff",
+  },
+  readDot: {
+    backgroundColor: "#acacac",
+  },
+  readText: {
+    color: "#acacac",
   },
   scrollContainer: {
     width: "100%",
@@ -217,20 +328,20 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: "#2bbfff",
     marginRight: 12,
-    marginTop: 4,
+    marginTop: 7,
   },
   title: {
-    fontSize: 14,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     fontWeight: 500,
     marginBottom: 4,
   },
   description: {
-    fontSize: 12,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(9),
     fontWeight: 300,
-    lineHeight: 12 * 1.5,
+    lineHeight:  Platform.OS === "ios" ? 12 * 1.5 : 8 * 1.5,
   },
   timestamp: {
-    fontSize: 14,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(11),
     fontWeight: 300,
     marginTop: 4,
   },

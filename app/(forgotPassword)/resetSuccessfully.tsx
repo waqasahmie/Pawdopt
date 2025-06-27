@@ -1,6 +1,7 @@
+import responsive from "@/constants/Responsive";
 import { router } from "expo-router";
 import React from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet, StatusBar } from "react-native";
+import { View, Text, TouchableOpacity, Image, StyleSheet, StatusBar, Platform } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 
 export default function PasswordResetSuccessfully() {
@@ -28,8 +29,8 @@ export default function PasswordResetSuccessfully() {
 
       {/* Continue Button */}
       <View style={styles.bottomContainer}>
-        <TouchableOpacity style={styles.continueButton} onPress={() => router.push("../(tabs)")}>
-          <Text style={styles.continueText}>Go To Homepage</Text>
+        <TouchableOpacity style={styles.continueButton} onPress={() => router.replace("/signin")}>
+          <Text style={styles.continueText}>Sign in</Text>
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -44,7 +45,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     paddingHorizontal: 20,
     paddingVertical: 50,
-    height: "100%", // Ensure it takes full screen height
+    height: "100%",
   },
   topLeftImage: {
     position: "absolute",
@@ -68,31 +69,33 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: "center",
-    transform: [{ translateY: "-50%" }], // Adjust to perfect center
+    transform: [{ translateY: "-50%" }],
   },
   successIcon: {
-    width: 102, // Adjust percentage as needed
-    height: 102, // Adjust percentage as needed
+    width: 102, 
+    height: 102, 
     marginBottom: 10,
   },
   textContainer: {
     alignItems: "center",
-    width: "100%", // Ensures full width
+    width: "100%",
   },
   title: {
-    fontSize: 32,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(29) : responsive.fontSize(23),
     fontWeight: "700",
     color: "#000",
     marginBottom: 10,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     color: "#939393",
     marginBottom: 10,
   },
   bottomContainer: {
     position: "absolute",
-    bottom: 40, // Change to 50 if needed
+    bottom: 40, 
     width: "100%",
   },
   continueButton: {
@@ -109,7 +112,8 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize:
+    Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
   },
 });

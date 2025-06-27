@@ -9,26 +9,112 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
-  SafeAreaView,
+  Alert,
+  Platform,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Feather } from "@expo/vector-icons";
-import { AccountDisabled} from "@/components/utils/accountDisabled"
-import { Modal } from '@/components/utils/modal'
+import { AccountDisabled } from "@/components/utils/accountDisabled";
+import { Modal } from "@/components/utils/modal";
+import { useUser } from "@clerk/clerk-expo";
+import { db } from "../../config/firebaseConfig";
+import {
+  deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  getDoc,
+} from "firebase/firestore";
+import { supabase } from "../../config/supabase";
+import { router } from "expo-router";
+import responsive from "@/constants/Responsive";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function DeleteAccount() {
   const navigation = useNavigation();
   const dismissKeyboard = () => Keyboard.dismiss();
   const [checked, setChecked] = useState(false);
   const [accountDisabledOpen, setAccountDisabledOpen] = useState(false);
+  const { user } = useUser();
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+
+    const userId = user.id;
+
+    try {
+      // Get user document
+      const userDocRef = doc(db, "users", userId);
+      const userDocSnap = await getDoc(userDocRef);
+      const userData = userDocSnap.exists() ? userDocSnap.data() : null;
+
+      if (userData) {
+        const { frontCNICUrl, backCNICUrl } = userData;
+        const imageUrls = [ frontCNICUrl, backCNICUrl];
+
+        for (const url of imageUrls) {
+          if (url) {
+            const path = url.split(
+              "/storage/v1/object/public/user-documents/"
+            )[1];
+            await supabase.storage.from("user-documents").remove([path]);
+          }
+        }
+      }
+
+      // Delete pet images and docs
+      const petsQuery = query(
+        collection(db, "petlistings"),
+        where("ownerId", "==", userId)
+      );
+      const petsSnapshot = await getDocs(petsQuery);
+
+      for (const petDoc of petsSnapshot.docs) {
+        const petData = petDoc.data();
+        if (petData.image && Array.isArray(petData.image)) {
+          for (const image of petData.image) {
+            const path = image.split(
+              "/storage/v1/object/public/user-documents/"
+            )[1];
+            await supabase.storage.from("user-documents").remove([path]);
+          }
+        }
+        await deleteDoc(petDoc.ref);
+      }
+
+      // Delete appointments
+      const appointmentsQuery = query(
+        collection(db, "appointments"),
+        where("patientId", "==", userId)
+      );
+      const appointmentsSnapshot = await getDocs(appointmentsQuery);
+      for (const appointmentDoc of appointmentsSnapshot.docs) {
+        await deleteDoc(appointmentDoc.ref);
+      }
+
+      // Delete user Firestore document
+      await deleteDoc(userDocRef);
+
+      // Delete Clerk user
+      await user.delete();
+
+      router.replace("/(onboarding)/getStarted");
+    } catch (error) {
+      Alert.alert("Error", "Failed to delete account. Please try again.");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.innerContainer}>
         <StatusBar barStyle="dark-content" />
         <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ zIndex: 10 }}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ zIndex: 10 }}
+          >
             <MaterialIcons name="arrow-back-ios-new" size={16} color="black" />
           </TouchableOpacity>
           <Text style={styles.navText}>Delete Account</Text>
@@ -114,10 +200,9 @@ export default function DeleteAccount() {
                     style={[styles.checkbox, checked && styles.checkedBox]}
                     onPress={() => setChecked(!checked)}
                   >
-                    {" "}
                     {checked && (
                       <Feather name="check" size={20} color="white" />
-                    )}{" "}
+                    )}
                   </TouchableOpacity>
                   <Text style={[styles.Subtitle, styles.infoPara]}>
                     Yes, I want to delete my account.
@@ -129,8 +214,11 @@ export default function DeleteAccount() {
                   your data.
                 </Text>
               </View>
-              <TouchableOpacity 
-                onPress={() => setAccountDisabledOpen(true)}
+              <TouchableOpacity
+                onPress={() => {
+                  handleDeleteAccount();
+                  setAccountDisabledOpen(true);
+                }}
                 style={[
                   styles.deleteButton,
                   { backgroundColor: checked ? "#2bbfff" : "#E3E5E5" },
@@ -150,8 +238,12 @@ export default function DeleteAccount() {
           </TouchableWithoutFeedback>
         </View>
       </View>
-      <Modal style={{justifyContent:"center"}} isOpen={accountDisabledOpen} closeModal={() => setAccountDisabledOpen(false)}>
-        <AccountDisabled closeModal={() => setAccountDisabledOpen(false)}/>
+      <Modal
+        style={{ justifyContent: "center" }}
+        isOpen={accountDisabledOpen}
+        closeModal={() => setAccountDisabledOpen(false)}
+      >
+        <AccountDisabled closeModal={() => setAccountDisabledOpen(false)} />
       </Modal>
     </SafeAreaView>
   );
@@ -171,11 +263,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    marginTop: 20,
+    marginTop: Platform.OS === "ios" ? 30 : 20,
     marginBottom: 20,
   },
   navText: {
-    fontSize: 24,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     fontWeight: "500",
     color: "#000",
     position: "absolute",
@@ -189,21 +281,21 @@ const styles = StyleSheet.create({
   },
 
   Title: {
-    fontSize: 24,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     fontWeight: "500",
     marginTop: 20,
     marginBottom: 18,
   },
   Subtitle: {
-    fontSize: 18,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     fontWeight: "500",
   },
   Subsubtitle: {
-    fontSize: 18,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     fontWeight: "400",
   },
   infoContainer: {
-    width: "100%", // Ensures full width
+    width: "100%", 
     marginVertical: 18,
   },
   infoTextContainer: {
@@ -215,7 +307,7 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   infoPara: {
-    width: "100%", // Ensures full width
+    width: "100%", 
     marginBottom: 16,
   },
   checkContainer: {
@@ -230,34 +322,35 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     borderColor: "#2BBFFF",
     marginRight: 10,
-    alignItems: "center", // Center tick horizontally
-    justifyContent: "center", // Center tick vertically
+    alignItems: "center", 
+    justifyContent: "center", 
   },
   checkedBox: {
-    backgroundColor: "#2BBFFF", // Change background when checked
+    backgroundColor: "#2BBFFF", 
     borderColor: "#2BBFFF",
   },
   inputNote: {
     color: "#939393",
-    fontSize: 10,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(9) : responsive.fontSize(7),
     marginTop: -10,
   },
   deleteButton: {
     backgroundColor: "#2BBFFF",
     width: "100%",
     padding: 15,
+    marginBottom:40,
     borderRadius: 30,
     alignItems: "center",
     marginVertical: 20,
-    shadowColor: "#000", // Shadow color
-    shadowOffset: { width: 0, height: 4 }, // Moves shadow downwards
-    shadowOpacity: 0.1, // Adjust shadow visibility
-    shadowRadius: 4, // Blur effect for shadow
+    shadowColor: "#000", 
+    shadowOffset: { width: 0, height: 4 }, 
+    shadowOpacity: 0.1, 
+    shadowRadius: 4, 
     elevation: 3, // For Android shadow
   },
   deleteText: {
     color: "#2BBFFF",
-    fontSize: 16,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(15) : responsive.fontSize(13),
     fontWeight: "600",
   },
 

@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Switch, SafeAreaView } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Switch, Platform } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import responsive from "@/constants/Responsive";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function NotificationSettings() {
   const navigation = useNavigation();
@@ -70,13 +72,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    marginTop: 20,
+    marginTop: Platform.OS === "ios" ? 20 : 20,
     marginBottom: 40,
   },
   navText: {
-    fontSize: 24,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     fontWeight: "500",
-    color: "#000",
     position: "absolute",
     textAlign: "center",
     left: 0,
@@ -87,13 +88,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    marginBottom: 20,
+    marginBottom: 10,
   },
   toggleText: {
-    fontSize: 22,
+    fontSize: Platform.OS === "ios" ? responsive.fontSize(19) : responsive.fontSize(16),
     fontWeight: "400",
     color: "#000",
     width: "80%",
   },
 });
-

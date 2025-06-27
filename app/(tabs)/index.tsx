@@ -1,20 +1,21 @@
 import { FemaleSymbolIcon, MaleSymbolIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react-native";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
   Image,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Platform,
   Animated,
   PanResponder,
-  Modal,
+  RefreshControl,
+  BackHandler,
+  FlatList,
+  StatusBar,
 } from "react-native";
-import { s, vs, ms } from "react-native-size-matters";
 import { ListModal } from "@/components/utils/listModal";
 import { PetCategoryBS } from "@/components/utils/petCategoryBS";
 import { CatBreedBS } from "@/components/utils/catBreedBS";
@@ -25,194 +26,231 @@ import { PetDescription } from "@/components/utils/petDescriptionBS";
 import { PetInfoBS } from "@/components/utils/petInfoBS";
 import { PetSubmitted } from "@/components/utils/petSubmitted";
 import { Easing } from "react-native-reanimated";
-
-const bannerImages = [
-  require("../../assets/images/bannerOne.png"),
-  require("../../assets/images/bannerTwo.png"),
-  require("../../assets/images/bannerThree.png"),
-];
+import { db } from "../../config/firebaseConfig";
+import { doc, setDoc, where, query, updateDoc } from "firebase/firestore";
+import { useUser } from "@clerk/clerk-expo";
+import { collection, getDocs } from "firebase/firestore";
+import { useAppContext } from "@/hooks/AppContext";
+import { registerForPushNotificationsAsync } from "../../components/utils/notifications";
+import * as Notifications from "expo-notifications";
+import { EventSubscription } from "expo-modules-core";
+import responsive from "@/constants/Responsive";
+import Toast from "@/components/utils/toast";
 
 const width = 336;
 const BANNER_HEIGHT = 140;
 const AUTO_SCROLL_INTERVAL = 3000;
-
-const allPets = [
-  {
-    id: 1,
-    breed: "Maine Coon",
-    name: "Smokey",
-    category: "Cats",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "1.7km Away",
-    image: require("../../assets/images/mainecoon.jpg"),
-  },
-  {
-    id: 2,
-    breed: "Macaw",
-    name: "Lily",
-    category: "Parrots",
-    gender: "Female",
-    size: { width: 14, height: 16 },
-    distance: "3.2km Away",
-    image: require("../../assets/images/macaw.jpg"),
-  },
-  {
-    id: 3,
-    breed: "Golden Ret.",
-    name: "Lucy",
-    category: "Dogs",
-    gender: "Female",
-    size: { width: 14, height: 16 },
-    distance: "1.3km Away",
-    image: require("../../assets/images/goldenretriever.jpg"),
-  },
-  {
-    id: 4,
-    breed: "British Short.",
-    name: "Raya",
-    category: "Cats",
-    gender: "Female",
-    size: { width: 14, height: 16 },
-    distance: "2.9km Away",
-    image: require("../../assets/images/britishshorthair.jpg"),
-  },
-  {
-    id: 5,
-    breed: "Cockatoo",
-    name: "Smiley",
-    category: "Parrots",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "2.8km Away",
-    image: require("../../assets/images/cockatoo.jpg"),
-  },
-  {
-    id: 6,
-    breed: "Ragdoll",
-    name: "Leo",
-    category: "Cats",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "2.6km Away",
-    image: require("../../assets/images/ragdoll.jpg"),
-  },
-  {
-    id: 7,
-    breed: "Samoyed",
-    name: "Frosty",
-    category: "Dogs",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "3.1km Away",
-    image: require("../../assets/images/samoyed.jpg"),
-  },
-  {
-    id: 8,
-    breed: "African Grey",
-    name: "Gizmo",
-    category: "Parrots",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "1.9km Away",
-    image: require("../../assets/images/africangrey.jpg"),
-  },
-  {
-    id: 9,
-    breed: "Siberian L.",
-    name: "Mila",
-    category: "Cats",
-    gender: "Female",
-    size: { width: 14, height: 16 },
-    distance: "2.8km Away",
-    image: require("../../assets/images/siberian.jpg"),
-  },
-  {
-    id: 10,
-    breed: "Labrador R.",
-    name: "Daisy",
-    category: "Dogs",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "2.6km Away",
-    image: require("../../assets/images/labrador.jpg"),
-  },
-  {
-    id: 11,
-    breed: "M. Cockatoo",
-    name: "Candy",
-    category: "Parrots",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "2.6km Away",
-    image: require("../../assets/images/mcockatoo.jpg"),
-  },
-  {
-    id: 12,
-    breed: "German Sh.",
-    name: "Bruno",
-    category: "Dogs",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "1.8km Away",
-    image: require("../../assets/images/german.jpg"),
-  },
-  {
-    id: 13,
-    breed: "Sun Conure",
-    name: "Cane",
-    category: "Parrots",
-    gender: "Male",
-    size: { width: 16, height: 16 },
-    distance: "1.7km Away",
-    image: require("../../assets/images/sunconure.jpg"),
-  },
-  {
-    id: 14,
-    breed: "Persian",
-    name: "Abby",
-    category: "Cats",
-    gender: "Female",
-    size: { width: 14, height: 16 },
-    distance: "3.8km Away",
-    image: require("../../assets/images/persian.jpg"),
-  },
-  {
-    id: 15,
-    breed: "Husky",
-    name: "Snowy",
-    category: "Dogs",
-    gender: "Female",
-    size: { width: 14, height: 16 },
-    distance: "2.8km Away",
-    image: require("../../assets/images/husky.jpg"),
-  },
-];
+type Pet = {
+  id: string;
+  name: string;
+  category: string;
+  gender: string;
+  breed: string;
+  image: string;
+  latitude: number;
+  longitude: number;
+};
 
 export default function PetAdoptionScreen() {
   const [selectedCategory, setSelectedCategory] = useState("All");
-
+  const [allPets, setAllPets] = useState<Pet[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const currentIndex = useRef(0);
   const [activeDot, setActiveDot] = useState(0);
-
   const [petCategoryBSOpen, setPetCategoryBSOpen] = useState(false);
   const [petImagesBSOpen, setPetImagesBSOpen] = useState(false);
   const [petDescriptionBSOpen, setPetDescriptionBSOpen] = useState(false);
   const [petInfoBSOpen, setPetInfoBSOpen] = useState(false);
   const [petSubmittedOpen, setPetSubmittedOpen] = useState(false);
-  const [petSelectedCategory, setPetSelectedCategory] = useState<string | null>(
-    null
-  );
+  const [petSelectedCategory, setPetSelectedCategory] = useState("");
   const [dogBreedOpen, setDogBreedOpen] = useState(false);
   const [catBreedOpen, setCatBreedOpen] = useState(false);
   const [parrotBreedOpen, setParrotBreedOpen] = useState(false);
-  const { role } = useLocalSearchParams();
-  console.log("roleIndex", role);
-  //const pan = useRef(new Animated.ValueXY()).current;
+  const [bannerImages, setBannerImages] = useState<string[]>([]);
+  const [currentImage, setCurrentImage] = useState<string | null>(null);
+  const { userData, fetchUserData, resetPetListingData, setIsEdit, isEdit } =
+    useAppContext();
+  const { user } = useUser();
+  const notificationListener = useRef<EventSubscription | null>(null);
+  const responseListener = useRef<EventSubscription | null>(null);
+  const toastRef = useRef<any>({});
+
+  useEffect(() => {
+    if (user?.id) {
+      const updateLoggedInStatus = async () => {
+        await updateDoc(doc(db, "users", user.id), {
+          loggedIn: true,
+        });
+      };
+      updateLoggedInStatus();
+    }
+  }, [user?.id]);
+  
+  useFocusEffect(
+    useCallback(() => {
+      const checkCompletedAppointments = async () => {
+        if (!user?.id) return;
+
+        try {
+          const appointmentsRef = collection(db, "appointments");
+          const q = query(
+            appointmentsRef,
+            where("patientId", "==", user.id),
+            where("status", "==", "completed"),
+            where("fees", "!=", null)
+          );
+
+          const querySnapshot = await getDocs(q);
+
+          if (!querySnapshot.empty) {
+            const firstDoc = querySnapshot.docs[0];
+            const bookingId = firstDoc.id;
+            router.replace({
+              pathname: "/(others)/vetPayment",
+              params: { bookingId },
+            });
+          }
+        } catch (error) {
+          toastRef.current.show({
+            type: "error",
+            title: "Oops!",
+            description: "Couldn't check completed appointments.",
+          });
+        }
+      };
+
+      checkCompletedAppointments();
+    }, [user?.id, router])
+  );
+
+  useEffect(() => {
+    if (user) {
+      const setup = async () => {
+        const token = await registerForPushNotificationsAsync();
+        if (token) {
+          await setDoc(
+            doc(db, "users", user.id),
+            { expoPushToken: token },
+            { merge: true }
+          );
+        }
+
+        notificationListener.current =
+          Notifications.addNotificationReceivedListener((notification) => {
+            console.log("Foreground notification:", notification);
+          });
+
+        responseListener.current =
+          Notifications.addNotificationResponseReceivedListener((response) => {
+            console.log("User tapped notification:", response);
+          });
+      };
+
+      setup();
+
+      return () => {
+        if (notificationListener.current) {
+          Notifications.removeNotificationSubscription(
+            notificationListener.current
+          );
+        }
+        if (responseListener.current) {
+          Notifications.removeNotificationSubscription(
+            responseListener.current
+          );
+        }
+      };
+    }
+  }, [user]);
+  if (!userData || userData.role === null) {
+    fetchUserData();
+  }
+
+  const [role, setRole] = useState<string>("");
+  const normalizeCategory = (type: string) => {
+    if (type === "Cat") return "Cats";
+    if (type === "Dog") return "Dogs";
+    if (type === "Parrot") return "Parrots";
+    return type;
+  };
+  const fetchPets = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "petlistings"));
+      const pets = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name,
+          category: normalizeCategory(data.category),
+          gender: data.gender,
+          breed: Array.isArray(data.breed) ? data.breed[0] : data.breed,
+          size: { width: 16, height: 16 },
+          image: data.image?.[0],
+          latitude: data.latitude,
+          longitude: data.longitude,
+        };
+      });
+      setAllPets(pets);
+    } catch (error) {
+      toastRef.current.show({
+        type: "error",
+        title: "Something Went Wrong",
+        description: "We couldn't load the pets. Try again shortly.",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchPets();
+  }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (Platform.OS !== "android") return;
+
+      const onBackPress = () => {
+        BackHandler.exitApp();
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress
+      );
+
+      return () => subscription.remove();
+    }, [])
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchPets();
+    setRefreshing(false);
+  };
+  useEffect(() => {
+    if (userData) {
+      setRole(userData.role ?? "");
+    }
+  }, [userData]);
 
   const swipeTextOpacity = useRef(new Animated.Value(0)).current;
   const swipeTextTranslateX = useRef(new Animated.Value(20)).current;
+
+  const fetchBanners = async () => {
+    const bannerNames = ["bannerOne.png", "bannerTwo.png", "bannerThree.png"];
+
+    const urls = bannerNames.map((name) => {
+      return `https://xzrkiwwkrdhsurcqjwrt.supabase.co/storage/v1/object/public/user-documents/banners/${name}`;
+    });
+
+    setBannerImages(urls);
+    setCurrentImage(urls[0]);
+  };
+
+  useEffect(() => {
+    fetchBanners();
+  }, []);
 
   useEffect(() => {
     const loopAnimation = () => {
@@ -232,10 +270,10 @@ export default function PetAdoptionScreen() {
             useNativeDriver: true,
           }),
         ]),
-  
+
         // Hold in center
         Animated.delay(1000),
-  
+
         // Slide slightly left
         Animated.timing(swipeTextTranslateX, {
           toValue: -10,
@@ -243,7 +281,7 @@ export default function PetAdoptionScreen() {
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
-  
+
         // Fade out and slide smoothly back to right
         Animated.parallel([
           Animated.timing(swipeTextOpacity, {
@@ -254,29 +292,21 @@ export default function PetAdoptionScreen() {
           }),
           Animated.timing(swipeTextTranslateX, {
             toValue: 30,
-            duration: 400, // smoother slide back
+            duration: 400,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),
         ]),
-  
-        // Small pause before restart
+
         Animated.delay(500),
       ]).start(() => loopAnimation());
     };
-  
+
     loopAnimation();
   }, []);
-  
-  
-  
+
   const panResponder = useRef(
     PanResponder.create({
-      // onMoveShouldSetPanResponder: (evt, gestureState) => {
-      //   // Detect left swipe
-      //   return gestureState.dx < -20;
-      // },
-
       onMoveShouldSetPanResponder: (evt, gestureState) => {
         const { dx, dy } = gestureState;
         return Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy);
@@ -284,36 +314,45 @@ export default function PetAdoptionScreen() {
 
       onPanResponderRelease: (evt, gestureState) => {
         if (gestureState.dx < -50) {
+          resetPetListingData();
+          setIsEdit("false");
           setPetCategoryBSOpen(true);
         }
       },
     })
   ).current;
 
-  const dotAnimations = useRef(
-    bannerImages.map(() => new Animated.Value(6))
-  ).current;
-
-  const [currentImage, setCurrentImage] = useState(bannerImages[0]);
+  const dotAnimations = useRef([
+    new Animated.Value(6),
+    new Animated.Value(6),
+    new Animated.Value(6),
+  ]).current;
 
   useEffect(() => {
-    // Initialize first dot animation
+    if (bannerImages.length > 0) {
+      dotAnimations[0].setValue(18);
+    }
+  }, [bannerImages]);
+  useEffect(() => {
+    resetPetListingData();
+  }, []);
+  useEffect(() => {
+    if (bannerImages.length === 0) return;
+
     dotAnimations[0].setValue(18);
 
     const interval = setInterval(() => {
       // Fade out
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 50,
+        duration: 300,
         useNativeDriver: true,
       }).start(() => {
-        // Update index and image
         currentIndex.current = (currentIndex.current + 1) % bannerImages.length;
         const newIndex = currentIndex.current;
         setCurrentImage(bannerImages[newIndex]);
         setActiveDot(newIndex);
 
-        // Update dot animation
         dotAnimations.forEach((dot, i) => {
           Animated.timing(dot, {
             toValue: i === newIndex ? 18 : 6,
@@ -325,14 +364,14 @@ export default function PetAdoptionScreen() {
         // Fade in
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 50,
+          duration: 300,
           useNativeDriver: true,
         }).start();
       });
     }, AUTO_SCROLL_INTERVAL);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [bannerImages]);
 
   const categories = ["All", "Cats", "Dogs", "Parrots"];
 
@@ -351,13 +390,13 @@ export default function PetAdoptionScreen() {
         Animated.parallel([
           Animated.spring(pillAnim, {
             toValue: x,
-            stiffness: 150, // lower = softer spring
+            stiffness: 150,
             damping: 20,
             useNativeDriver: false,
           }),
           Animated.spring(pillWidth, {
             toValue: width,
-            stiffness: 150, // lower = softer spring
+            stiffness: 150,
             damping: 20,
             useNativeDriver: false,
           }),
@@ -366,14 +405,93 @@ export default function PetAdoptionScreen() {
     }
   }, [selectedCategory]);
 
+  const getDistanceFromLatLonInKm = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ) => {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+    return parseFloat(distance.toFixed(1));
+  };
+
+  const renderPetItem = ({ item }: { item: any }) => {
+    const pet = item;
+
+    const petLat = Number(pet.latitude);
+    const petLon = Number(pet.longitude);
+    const userLat = Number(userData?.latitude);
+    const userLon = Number(userData?.longitude);
+
+    const distance =
+      userLat && userLon && petLat && petLon
+        ? getDistanceFromLatLonInKm(userLat, userLon, petLat, petLon)
+        : null;
+
+    return (
+      <TouchableOpacity
+        key={pet.id}
+        style={styles.petCard}
+        onPress={() => router.push(`/petDetail?petId=${pet.id}`)}
+      >
+        <Image source={{ uri: pet.image }} style={styles.petImage} />
+        <View style={styles.petInfo}>
+          <Text style={styles.breedText}>{pet.breed}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={styles.nameText}>{pet.name}</Text>
+            <View style={styles.gender}>
+              {pet.gender === "Female" ? (
+                <HugeiconsIcon
+                  icon={FemaleSymbolIcon}
+                  size={16}
+                  color="#2BBFFF"
+                  strokeWidth={2.5}
+                />
+              ) : pet.gender === "Male" ? (
+                <HugeiconsIcon
+                  icon={MaleSymbolIcon}
+                  size={16}
+                  color="#2BBFFF"
+                  strokeWidth={2.5}
+                />
+              ) : null}
+            </View>
+          </View>
+          <Text style={styles.distanceText}>
+            {distance != null
+              ? `${distance.toFixed(1)} km away`
+              : "Distance unavailable"}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.innerContainer}>
         <View style={styles.wrapper}>
-          <Animated.Image
-            source={currentImage}
-            style={[styles.bannerImage, { opacity: fadeAnim }]}
-          />
+          {currentImage ? (
+            <Animated.Image
+              source={{ uri: currentImage }}
+              style={[styles.bannerImage, { opacity: fadeAnim }]}
+            />
+          ) : (
+            <View style={styles.fallbackContainer}>
+              <Text>No image available</Text>
+            </View>
+          )}
 
           {/* Pagination */}
           <View style={styles.paginationContainer}>
@@ -411,7 +529,11 @@ export default function PetAdoptionScreen() {
               </Animated.Text>
               <TouchableOpacity
                 style={styles.button}
-                onPress={() => setPetCategoryBSOpen(true)}
+                onPress={() => {
+                  resetPetListingData();
+                  setIsEdit("false");
+                  setPetCategoryBSOpen(true);
+                }}
                 activeOpacity={0.8}
               >
                 <Text style={styles.buttonText}>List Your Pet</Text>
@@ -422,7 +544,7 @@ export default function PetAdoptionScreen() {
 
         <Text style={styles.title}>Pet Categories</Text>
         <View style={styles.categories}>
-          {/* 🔧 Animated background pill */}
+          {/* Animated background pill */}
           <Animated.View
             style={[
               styles.activeCategory,
@@ -449,63 +571,55 @@ export default function PetAdoptionScreen() {
           ))}
         </View>
 
-        <View style={styles.scrollContainer}>
-          <ScrollView
-            contentContainerStyle={{ flexGrow: 1 }}
-            showsVerticalScrollIndicator={false}
-          >
-            {filteredPets.map((pet) => (
-              <TouchableOpacity
-                key={pet.id}
-                style={styles.petCard}
-                onPress={() => router.push("./(others)/petDetail")}
-              >
-                <Image source={pet.image} style={styles.petImage} />
-                <View style={styles.petInfo}>
-                  <Text style={styles.breedText}>{pet.breed}</Text>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Text style={styles.nameText}>{pet.name}</Text>
-                    <View style={styles.gender}>
-                      {pet.gender === "Female" ? (
-                        <HugeiconsIcon
-                          icon={FemaleSymbolIcon}
-                          size={ms(16)}
-                          color="#2BBFFF"
-                          strokeWidth={2.5}
-                        />
-                      ) : pet.gender === "Male" ? (
-                        <HugeiconsIcon
-                          icon={MaleSymbolIcon}
-                          size={ms(16)}
-                          color="#2BBFFF"
-                          strokeWidth={2.5}
-                        />
-                      ) : null}
-                    </View>
-                  </View>
-                  <Text style={styles.distanceText}>{pet.distance}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+        <FlatList
+          data={filteredPets.filter((pet) => {
+            const petLat = Number(pet.latitude);
+            const petLon = Number(pet.longitude);
+            const userLat = Number(userData?.latitude);
+            const userLon = Number(userData?.longitude);
+
+            if (!userLat || !userLon || !petLat || !petLon) return false;
+
+            const distance = getDistanceFromLatLonInKm(
+              userLat,
+              userLon,
+              petLat,
+              petLon
+            );
+            return distance <= 30;
+          })}
+          keyExtractor={(item) => item.id}
+          renderItem={renderPetItem}
+          ListFooterComponent={
             <Text style={styles.note}>Looks like you've reached the end!</Text>
-          </ScrollView>
-        </View>
+          }
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#2bbfff"
+              colors={["#2bbfff"]}
+              progressBackgroundColor="#f2fbff"
+            />
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 90 }}
+        />
+
         <ListModal
           isOpen={petCategoryBSOpen}
           closeModal={() => setPetCategoryBSOpen(false)}
         >
           <PetCategoryBS
-            // closeModal={() => setPetCategoryBSOpen(false)}
             onSelectCategory={(category) => {
-              setPetSelectedCategory(category);
-              setPetCategoryBSOpen(false); // close category modal
-              // Open the relevant breed modal
+              setPetCategoryBSOpen(false);
               if (category === "2") {
                 setDogBreedOpen(true);
               } else if (category === "1") {
                 setCatBreedOpen(true);
               } else if (category === "3") {
                 setParrotBreedOpen(true);
+                setPetSelectedCategory("parrot");
               }
             }}
             onCloseAndOpenModal={() => {
@@ -585,6 +699,7 @@ export default function PetAdoptionScreen() {
               setPetSubmittedOpen(true);
             }}
             direction="horizontal"
+            category={petSelectedCategory}
           />
         </ListModal>
         <ListModal
@@ -597,6 +712,7 @@ export default function PetAdoptionScreen() {
           />
         </ListModal>
       </View>
+      <Toast ref={toastRef} />
     </View>
   );
 }
@@ -609,67 +725,8 @@ const styles = StyleSheet.create({
   innerContainer: {
     flex: 1,
     justifyContent: "flex-start",
-    paddingHorizontal: s(20),
+    paddingHorizontal: 20,
     gap: 20,
-  },
-  headerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    width: "100%",
-    marginTop: Platform.OS === "ios" ? 50 : 20,
-  },
-  scrollContainer: {
-    width: "100%",
-    marginBottom: Platform.OS === "ios" ? "110%" : "120%",
-  },
-  greetingContainer: {
-    flexDirection: "row",
-  },
-  greeting: {
-    flexDirection: "column",
-  },
-  greetingText: {
-    fontSize: 14,
-    fontWeight: "400",
-    color: "#acacac",
-  },
-  username: {
-    fontSize: 16,
-    fontWeight: "400",
-  },
-  paw: {
-    width: 20,
-    height: 20,
-    right: 8,
-  },
-  searchContainer: {
-    width: "50%",
-    justifyContent: "center",
-  },
-  searchInput: {
-    height: ms(40),
-    fontSize: Platform.OS === "ios" ? ms(15) : ms(12),
-    borderRadius: 50,
-    borderWidth: 1,
-    borderColor: "#dcdcdc",
-    paddingVertical: vs(10),
-    paddingLeft: ms(20),
-    paddingRight: ms(40),
-  },
-  searchIcon: {
-    position: "absolute",
-    right: 10,
-    color: "#000",
-  },
-  iconRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  icon: {
-    width: 40,
-    height: 40,
   },
   wrapper: {
     width: width,
@@ -689,6 +746,11 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
   },
+  fallbackContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   paginationContainer: {
     position: "absolute",
     bottom: 4,
@@ -704,7 +766,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   title: {
-    fontSize: 22,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(21) : responsive.fontSize(18),
     fontWeight: "600",
   },
   categories: {
@@ -721,7 +784,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 50,
-    // backgroundColor:"pink",
   },
   activeCategory: {
     alignSelf: "center",
@@ -733,41 +795,43 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     color: "#000",
-    fontSize: 14,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(12),
     fontWeight: "500",
   },
   activeCategoryText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(13) : responsive.fontSize(12),
     fontWeight: "500",
   },
   petCard: {
     flexDirection: "row",
-    marginBottom: ms(25),
-    marginTop: ms(2),
-    padding: ms(6),
+    marginBottom: 25,
+    marginTop: 2,
+    padding: 6,
     borderRadius: 20,
     backgroundColor: "#fff",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: vs(4) },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   petImage: {
-    width: ms(145),
-    height: ms(170),
-
+    width: 145,
+    height: 170,
     borderRadius: 14,
   },
   petInfo: {
-    paddingHorizontal: s(15),
-    paddingVertical: vs(10),
+    paddingHorizontal: 15,
+    paddingVertical: 10,
     flex: 1,
   },
   breedText: {
     fontFamily: "JUST Sans Outline ExBold",
-    fontSize: Platform.OS === "ios" ? ms(26) : ms(21),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(28) : responsive.fontSize(18),
     fontWeight: "600",
     color: "#D4D4D4",
   },
@@ -776,38 +840,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   nameText: {
-    fontSize: Platform.OS === "ios" ? ms(17) : ms(14),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(17) : responsive.fontSize(14),
     color: "#ACACAC",
-    marginTop: ms(5),
+    marginTop: 5,
   },
   gender: {
-    marginTop: ms(7),
-    marginLeft: ms(6),
+    marginTop: 7,
+    marginLeft: 6,
   },
   distanceText: {
-    fontSize: Platform.OS === "ios" ? ms(11) : ms(8),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(8),
     color: "#ACACAC",
     position: "absolute",
     bottom: 1,
     right: 10,
   },
   note: {
-    fontSize: Platform.OS === "ios" ? ms(11) : ms(8),
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(8),
     fontWeight: "400",
     alignSelf: "center",
     color: "#ACACAC",
-    marginBottom: ms(25),
+    marginBottom: 10,
   },
   listContainer: {
     position: "absolute",
-    right: -22, // Pushes the button out partially from the right edge
+    right: -22,
     top: 165,
     transform: [{ rotate: "-90deg" }],
     zIndex: 10,
     alignItems: "center",
   },
   swipeText: {
-    fontSize: 12,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(11) : responsive.fontSize(9),
     color: "#555",
     marginBottom: 4,
     bottom: 30,
@@ -828,6 +896,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontWeight: "500",
-    fontSize: 10,
+    fontSize:
+      Platform.OS === "ios" ? responsive.fontSize(9) : responsive.fontSize(8),
   },
 });

@@ -25,5 +25,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-  ]
+, "config/firebaseConfig.js", "config/uploadImage.js"  ]
 }

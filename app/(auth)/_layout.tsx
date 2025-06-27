@@ -1,8 +1,12 @@
-import { Slot} from 'expo-router';
+import { Slot } from "expo-router";
+import { Redirect, Stack } from "expo-router";
+import { useAuth } from "@clerk/clerk-expo";
 
 export default function Layout() {
+  const { isSignedIn } = useAuth();
 
-  return (
-    <Slot />
-  );
+  if (isSignedIn) {
+    return <Redirect href={"/(tabs)"} />;
+  }
+  return <Slot />;
 }
